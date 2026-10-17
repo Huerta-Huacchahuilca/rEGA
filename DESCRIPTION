@@ -1,0 +1,44 @@
+Package: rEGA
+Type: Package
+Title: Reliability Exploratory Graph Analysis (rEGA) and Nodal Variance Decomposition
+Version: 0.1.0
+Authors@R: c(
+    person("César", "Huerta-Huacchahuilca", email = "andrehuerta1411@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0009-0000-8906-2678"))
+  )
+Description: Implements Reliability Exploratory Graph Analysis (rEGA), a network 
+    psychometrics framework that decomposes the Markov precision matrix via the 
+    Neumann-Markov resolvent operator. Eliminates L1 regularization bias through 
+    support-constrained maximum likelihood refitting, partitions nodal unit variance 
+    into within-community communality (h2), bridging variance (beta2), and Markov 
+    conditional uniqueness (psi2), and computes closed-form structural reliability 
+    coefficients (Network Gamma: Gamma_c and Gamma_t) alongside Graph Standard Errors 
+    of Measurement (SEM). Seamlessly accepts pre-estimated 'EGAnet' objects or 
+    autonomously estimates networks from raw data or correlation matrices. Includes 
+    parallel bootstrap inference ('boot.rEGA'), attenuation-aware power planning, 
+    and Open Science cryptographic auditing.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+Depends: 
+    R (>= 4.1.0)
+Imports:
+    stats,
+    utils,
+    Matrix,
+    MASS,
+    glasso,
+    qgraph,
+    igraph,
+    psych,
+    ggplot2,
+    future,
+    future.apply,
+    progressr,
+    digest,
+    openxlsx,
+    pwr
+URL: https://github.com/Huerta-Huacchahuilca/rEGA
+BugReports: https://github.com/Huerta-Huacchahuilca/rEGA/issues
+Config/roxygen2/version: 8.0.0
