@@ -16,9 +16,9 @@
 #' @param gamma.baseline Numeric. Baseline network reliability if \code{rEGA.obj = NULL}.
 #'   Default is \code{0.80}.
 #' @param p.baseline Integer. Baseline number of items if \code{rEGA.obj = NULL}.
-#'   Default is \code{7}.
+#'   Default is \code{7L}.
 #' @param p.target Integer vector. Candidate target item counts to evaluate.
-#'   Default is \code{c(5, 7, 10, 15)}.
+#'   Default is \code{c(5L, 7L, 10L, 15L)}.
 #' @param r.true Numeric. Expected true (unattenuated) effect size correlation
 #'   with an external criterion. Default is \code{0.30}.
 #' @param gamma.criterion Numeric. Reliability of the external criterion measure.
@@ -157,7 +157,7 @@ rEGA.audit <- function(rEGA.obj,
     ),
     Recorded_Value = c(
       as.character(Sys.time()),
-      paste0(R.version$version.string, " | ", R.version$platform),
+      paste0(R.version$version.string, " ert{} ", R.version$platform),
       as.character(utils::packageVersion("rEGA")),
       rEGA.obj$audit.metadata$pathway,
       rEGA.obj$audit.metadata$n,
@@ -179,7 +179,7 @@ rEGA.audit <- function(rEGA.obj,
 
   openxlsx::addWorksheet(wb, "02_Nodal_Triad_Loadings")
   r_next <- write_sheet_table("02_Nodal_Triad_Loadings", rEGA.obj$nodal.triad, 1,
-                              "1. Nodal Variance Conservation Triad (h2 + beta2 + psi2 = 1)")
+                              "1. Nodal Variance Conservation Triad (h2 + beta2 + psi2 = 1 | 100%)")
   write_sheet_table("02_Nodal_Triad_Loadings", mat_to_df(rEGA.obj$net.loadings), r_next,
                     "2. Standardized Network Loadings")
 
@@ -214,7 +214,7 @@ rEGA.audit <- function(rEGA.obj,
     r_next <- write_sheet_table("05_Bootstrap_Stability", boot.obj$structural.consistency, r_next,
                                 "2. Structural Consistency by Dimension")
     r_next <- write_sheet_table("05_Bootstrap_Stability", boot.obj$agreement.matrix, r_next,
-                                "3. Diagnostic Agreement Matrix (>10% Drift Flag per Henry, 2026)")
+                                "3. Diagnostic Agreement Matrix (Holistic evaluation, no rigid cutoffs)")
     write_sheet_table("05_Bootstrap_Stability", boot.obj$nodal.ci, r_next,
                       "4. Nodal Triad 95% Bootstrap Confidence Intervals & Item Stability")
   }

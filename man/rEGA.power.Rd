@@ -23,10 +23,10 @@ baseline reliability \code{Gamma.t} and item count \code{p}.}
 Default is \code{0.80}.}
 
 \item{p.baseline}{Integer. Baseline number of items if \code{rEGA.obj = NULL}.
-Default is \code{7}.}
+Default is \code{7L}.}
 
 \item{p.target}{Integer vector. Candidate target item counts to evaluate.
-Default is \code{c(5, 7, 10, 15)}.}
+Default is \code{c(5L, 7L, 10L, 15L)}.}
 
 \item{r.true}{Numeric. Expected true (unattenuated) effect size correlation
 with an external criterion. Default is \code{0.30}.}

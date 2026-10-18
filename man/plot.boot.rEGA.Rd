@@ -4,13 +4,27 @@
 \alias{plot.boot.rEGA}
 \title{Plot Method for boot.rEGA Objects}
 \usage{
-\method{plot}{boot.rEGA}(x, ...)
+\method{plot}{boot.rEGA}(
+  x,
+  type = c("both", "stability", "network", "variance", "all"),
+  show.values = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class \code{"boot.rEGA"}.}
 
+\item{type}{Character. Visualization layout: \code{"both"} (default, side-by-side
+\code{rEGA} Network + Item Stability), \code{"all"} (3-panel: Network + Nodal Triad +
+Item Stability), \code{"stability"} (Item Stability only), \code{"network"} (Network only),
+or \code{"variance"} (Nodal Variance Triad only).}
+
+\item{show.values}{Logical. Display exact percentages on items? Default is \code{TRUE}.}
+
 \item{...}{Additional arguments (unused).}
 }
 \description{
-Plot Method for boot.rEGA Objects
+Generates a unified side-by-side figure combining the empirical \code{rEGA} network
+(EGA-style) and the bootstrap item stability plot (similar to \code{bootEGA}), or
+individual diagnostic panels, without rigid cutoff lines.
 }

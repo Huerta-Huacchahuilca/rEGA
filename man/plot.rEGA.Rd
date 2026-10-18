@@ -4,15 +4,22 @@
 \alias{plot.rEGA}
 \title{Plot Method for rEGA Objects}
 \usage{
-\method{plot}{rEGA}(x, type = c("variance", "network"), ...)
+\method{plot}{rEGA}(x, type = c("both", "variance", "network"), show.values = TRUE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{"rEGA"}.}
 
-\item{type}{Character. Type of plot: \code{"variance"} (Nodal Variance Triad) or \code{"network"} (Purity-Weighted Graph).}
+\item{type}{Character. Type of plot: \code{"both"} (default, side-by-side EGA network and
+Nodal Variance Triad), \code{"network"} (EGA-style network), or \code{"variance"}
+(Nodal Variance Triad bar chart).}
 
-\item{...}{Additional arguments passed to \code{qgraph} (if type = "network").}
+\item{show.values}{Logical. If \code{TRUE} (default), displays the exact standardized
+percentages for each of the 3 nodal variance components (\code{h2 pct + beta2 pct + psi2 pct = 100 percent})
+on every item.}
+
+\item{...}{Additional arguments (unused).}
 }
 \description{
-Plot Method for rEGA Objects
+Visualizes the EGA-style Purity-Weighted Partial Correlation Network, the Nodal Variance
+Conservation Triad (with standardized item percentages summing to 100 percent), or both side-by-side.
 }

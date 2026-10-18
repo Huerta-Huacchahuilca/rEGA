@@ -3,29 +3,30 @@ Type: Package
 Title: Reliability Exploratory Graph Analysis (rEGA) and Nodal Variance Decomposition
 Version: 0.1.0
 Authors@R: c(
-    person("César", "Huerta-Huacchahuilca", email = "andrehuerta1411@gmail.com", role = c("aut", "cre"),
+    person("C\u00e9sar", "Huerta-Huacchahuilca",
+           email = "andrehuerta1411@gmail.com",
+           role = c("aut", "cre"),
            comment = c(ORCID = "0009-0000-8906-2678"))
   )
-Description: Implements Reliability Exploratory Graph Analysis (rEGA), a network 
-    psychometrics framework that decomposes the Markov precision matrix via the 
-    Neumann-Markov resolvent operator. Eliminates L1 regularization bias through 
-    support-constrained maximum likelihood refitting, partitions nodal unit variance 
-    into within-community communality (h2), bridging variance (beta2), and Markov 
-    conditional uniqueness (psi2), and computes closed-form structural reliability 
-    coefficients (Network Gamma: Gamma_c and Gamma_t) alongside Graph Standard Errors 
-    of Measurement (SEM). Seamlessly accepts pre-estimated 'EGAnet' objects or 
-    autonomously estimates networks from raw data or correlation matrices. Includes 
-    parallel bootstrap inference ('boot.rEGA'), attenuation-aware power planning, 
-    and Open Science cryptographic auditing.
+Description: Implements Reliability Exploratory Graph Analysis (rEGA), an autonomous
+    network psychometrics framework that decomposes the Markov precision matrix via
+    the Neumann-Markov resolvent operator. Eliminates L1 regularization bias through
+    support-constrained maximum likelihood refitting, partitions nodal unit variance
+    into within-community communality (h2), bridging variance (beta2), and Markov
+    conditional uniqueness (psi2), and computes closed-form structural reliability
+    coefficients (Network Gamma: Gamma_c and Gamma_t) alongside Graph Standard Errors
+    of Measurement (SEM). Includes parallel bootstrap inference ('boot.rEGA'),
+    attenuation-aware power planning, and Open Science cryptographic auditing.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
 Roxygen: list(markdown = TRUE)
 Depends: 
     R (>= 4.1.0)
 Imports:
     stats,
     utils,
+    grid,
+    grDevices,
     Matrix,
     MASS,
     glasso,
@@ -39,6 +40,10 @@ Imports:
     digest,
     openxlsx,
     pwr
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
 URL: https://github.com/Huerta-Huacchahuilca/rEGA
 BugReports: https://github.com/Huerta-Huacchahuilca/rEGA/issues
 Config/roxygen2/version: 8.0.0
