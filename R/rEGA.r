@@ -416,19 +416,41 @@ rEGA <- function(
 }
 
 .compute_rEGA_cor <- function(df, cor.method = "cor_auto") {
+  df_num <- as.data.frame(lapply(df, as.numeric))
+  colnames(df_num) <- colnames(df)
+
   if (cor.method == "cor_auto") {
-    R <- suppressMessages(suppressWarnings(qgraph::cor_auto(df)))
+    is_ord <- vapply(df_num, function(x) {
+      length(unique(x[!is.na(x)])) <= 7L
+    }, logical(1))
+
+    if (!any(is_ord)) {
+      R <- stats::cor(df_num, use = "pairwise.complete.obs", method = "pearson")
+    } else {
+      R <- tryCatch(
+        suppressMessages(suppressWarnings(qgraph::cor_auto(df_num, forcePD = TRUE))),
+        error = function(e) {
+          tryCatch(
+            suppressMessages(suppressWarnings(psych::polychoric(df_num, smooth = TRUE, correct = 0.01)$rho)),
+            error = function(e2) stats::cor(df_num, use = "pairwise.complete.obs", method = "pearson")
+          )
+        }
+      )
+    }
   } else if (cor.method == "polychoric") {
     R <- tryCatch(
-      suppressWarnings(psych::polychoric(df, smooth = TRUE, correct = 0.01)$rho),
-      error = function(e) stats::cor(df, use = "pairwise.complete.obs")
+      suppressMessages(suppressWarnings(psych::polychoric(df_num, smooth = TRUE, correct = 0.01)$rho)),
+      error = function(e) stats::cor(df_num, use = "pairwise.complete.obs", method = "pearson")
     )
   } else if (cor.method == "spearman") {
-    R <- stats::cor(df, use = "pairwise.complete.obs", method = "spearman")
+    R <- stats::cor(df_num, use = "pairwise.complete.obs", method = "spearman")
   } else {
-    R <- stats::cor(df, use = "pairwise.complete.obs", method = "pearson")
+    R <- stats::cor(df_num, use = "pairwise.complete.obs", method = "pearson")
   }
-  return(as.matrix(R))
+
+  R <- as.matrix(R)
+  colnames(R) <- rownames(R) <- colnames(df)
+  return(R)
 }
 
 .ensure_pd_cor <- function(R) {
@@ -524,7 +546,10 @@ rEGA <- function(
   if (!is.null(raw_data)) {
     sim_dat <- MASS::mvrnorm(n = nrow(raw_data), mu = rep(0, p_sim), Sigma = Sigma_sim)
     colnames(sim_dat) <- paste0("SIM_UNI_", seq_len(p_sim))
-    R_exp <- .compute_rEGA_cor(cbind(sim_dat, raw_data), cor.method = cor.method)
+    R_sim <- stats::cor(sim_dat)
+    R_cross <- stats::cor(sim_dat, as.data.frame(lapply(raw_data, as.numeric)), use = "pairwise.complete.obs")
+    R_exp <- rbind(cbind(R_sim, R_cross), cbind(t(R_cross), R_obs))
+    colnames(R_exp) <- rownames(R_exp) <- c(colnames(sim_dat), colnames(R_obs))
   } else {
     R_exp <- matrix(0, p + p_sim, p + p_sim)
     R_exp[seq_len(p_sim), seq_len(p_sim)] <- Sigma_sim
