@@ -1,41 +1,23 @@
-#' @title Attenuation-Aware Power and Sample Size Planning for rEGA
+#' @title Planificacion de Potencia y Tamano Muestral con Atenuacion para rEGA
 #'
 #' @description
-#' Implements the 3-step psychometric power and sample size workflow of Henry (2026)
-#' adapted to \code{rEGA} network reliability (\code{Gamma_c} or \code{Gamma_t}):
-#' \enumerate{
-#'   \item Projects expected Network Reliability (\code{Gamma_p}) when modifying
-#'         the number of items from baseline \code{p.baseline} to \code{p.target}.
-#'   \item Computes the attenuated observable correlation
-#'         (\code{r_obs = r_true * sqrt(Gamma_x * Gamma_y)}) and required sample
-#'         size \code{N} for target statistical power (\code{1 - beta}).
-#' }
+#' Calcula la fiabilidad proyectada de red (\code{Gamma_p}) segun la formula de
+#' Spearman-Brown y estima el tamano muestral requerido (\code{N}) considerando
+#' la atenuacion por error de medicion (Henry, 2026).
 #'
-#' @param rEGA.obj Optional object of class \code{"rEGA"} to automatically extract
-#'   baseline reliability \code{Gamma.t} and item count \code{p}.
-#' @param gamma.baseline Numeric. Baseline network reliability if \code{rEGA.obj = NULL}.
-#'   Default is \code{0.80}.
-#' @param p.baseline Integer. Baseline number of items if \code{rEGA.obj = NULL}.
-#'   Default is \code{7L}.
-#' @param p.target Integer vector. Candidate target item counts to evaluate.
-#'   Default is \code{c(5L, 7L, 10L, 15L)}.
-#' @param r.true Numeric. Expected true (unattenuated) effect size correlation
-#'   with an external criterion. Default is \code{0.30}.
-#' @param gamma.criterion Numeric. Reliability of the external criterion measure.
-#'   Default is \code{0.85}.
-#' @param power Numeric. Target statistical power. Default is \code{0.80}.
-#' @param alpha Numeric. Type I error rate. Default is \code{0.05}.
+#' @param rEGA.obj Objeto opcional de clase \code{"rEGA"}.
+#' @param gamma.baseline Numerico. Fiabilidad base si \code{rEGA.obj = NULL}. Por defecto \code{0.80}.
+#' @param p.baseline Entero. Numero de items base. Por defecto \code{7L}.
+#' @param p.target Vector entero de cantidades de items a evaluar. Por defecto \code{c(5L, 7L, 10L, 15L)}.
+#' @param r.true Numerico. Correlacion verdadera esperada. Por defecto \code{0.30}.
+#' @param gamma.criterion Numerico. Fiabilidad del criterio externo. Por defecto \code{0.85}.
+#' @param power Numerico. Potencia estadistica deseada. Por defecto \code{0.80}.
+#' @param alpha Numerico. Nivel de significancia. Por defecto \code{0.05}.
 #'
-#' @return A \code{data.frame} containing projected reliability,
-#'   attenuated observable correlations, required sample sizes \code{N}, and sample
-#'   size inflation due to measurement error.
+#' @return Un \code{data.frame} con la fiabilidad proyectada, correlacion observable atenuada y \code{N} requerido.
 #'
 #' @importFrom pwr pwr.r.test
 #' @export
-#'
-#' @examples
-#' power_plan <- rEGA.power(gamma.baseline = 0.85, p.baseline = 7, r.true = 0.30)
-#' print(power_plan)
 rEGA.power <- function(rEGA.obj = NULL,
                        gamma.baseline = 0.80,
                        p.baseline = 7L,
@@ -87,22 +69,17 @@ rEGA.power <- function(rEGA.obj = NULL,
   return(res_df)
 }
 
-#' @title Export Open Science Cryptographic Audit Workbook for rEGA
+#' @title Exportacion de Libro Excel de Auditoria Criptografica para rEGA
 #'
 #' @description
-#' Generates a multi-sheet Excel audit workbook (\code{.xlsx}) containing the Open Science
-#' computational manifest (R version, package versions, SHA-256 cryptographic data hash),
-#' stage-by-stage matrices (\code{R.obs}, \code{K.refit}, \code{network.refit},
-#' \code{resolvent}, \code{adjacency.rEGA}), the Nodal Variance Conservation Triad,
-#' Network Loadings, Structural Reliability (\code{Gamma_c}, \code{SEM_c}), and
-#' bootstrap inference tables if provided.
+#' Genera un archivo Excel (\code{.xlsx}) de 5 hojas con el manifiesto de reproducibilidad,
+#' hash SHA-256, matrices por etapa, triada nodal, fiabilidad estructural e intervalos bootstrap.
 #'
-#' @param rEGA.obj An object of class \code{"rEGA"}.
-#' @param boot.obj Optional object of class \code{"boot.rEGA"}.
-#' @param file Character. Output file path for the Excel workbook.
-#'   Default is \code{"rEGA_OpenScience_Audit.xlsx"}.
+#' @param rEGA.obj Objeto de clase \code{"rEGA"}.
+#' @param boot.obj Objeto opcional de clase \code{"boot.rEGA"}.
+#' @param file Ruta del archivo Excel de salida. Por defecto \code{"rEGA_OpenScience_Audit.xlsx"}.
 #'
-#' @return Invisibly returns the normalized path to the generated Excel file.
+#' @return Devuelve de forma invisible la ruta normalizada del archivo Excel.
 #'
 #' @importFrom openxlsx createWorkbook addWorksheet writeData createStyle addStyle setColWidths saveWorkbook
 #' @export
@@ -149,6 +126,7 @@ rEGA.audit <- function(rEGA.obj,
       "Community Algorithm",
       "EBIC Gamma Used",
       "Active Edges (E_lambda)",
+      "Random Seed Used",
       "Min Eigenvalue of K_refit",
       "Max Resolvent Algebraic Error",
       "Max Nodal Triad Conservation Error",
@@ -157,7 +135,7 @@ rEGA.audit <- function(rEGA.obj,
     ),
     Recorded_Value = c(
       as.character(Sys.time()),
-      paste0(R.version$version.string, " ert{} ", R.version$platform),
+      paste0(R.version$version.string, " - ", R.version$platform),
       as.character(utils::packageVersion("rEGA")),
       rEGA.obj$audit.metadata$pathway,
       rEGA.obj$audit.metadata$n,
@@ -166,6 +144,7 @@ rEGA.audit <- function(rEGA.obj,
       rEGA.obj$audit.metadata$algorithm,
       rEGA.obj$audit.metadata$gamma.used,
       rEGA.obj$audit.metadata$active.edges,
+      if (!is.null(rEGA.obj$audit.metadata$seed)) rEGA.obj$audit.metadata$seed else 11L,
       round(rEGA.obj$audit.metadata$min.eigen.Krefit, 8),
       format(rEGA.obj$audit.metadata$max.algebraic.error, scientific = TRUE),
       format(rEGA.obj$audit.metadata$max.conservation.error, scientific = TRUE),
@@ -179,7 +158,7 @@ rEGA.audit <- function(rEGA.obj,
 
   openxlsx::addWorksheet(wb, "02_Nodal_Triad_Loadings")
   r_next <- write_sheet_table("02_Nodal_Triad_Loadings", rEGA.obj$nodal.triad, 1,
-                              "1. Nodal Variance Conservation Triad (h2 + beta2 + psi2 = 1 | 100%)")
+                              "1. Nodal Variance Conservation Triad (h2 + beta2 + psi2 = 1)")
   write_sheet_table("02_Nodal_Triad_Loadings", mat_to_df(rEGA.obj$net.loadings), r_next,
                     "2. Standardized Network Loadings")
 
@@ -214,7 +193,7 @@ rEGA.audit <- function(rEGA.obj,
     r_next <- write_sheet_table("05_Bootstrap_Stability", boot.obj$structural.consistency, r_next,
                                 "2. Structural Consistency by Dimension")
     r_next <- write_sheet_table("05_Bootstrap_Stability", boot.obj$agreement.matrix, r_next,
-                                "3. Diagnostic Agreement Matrix (Holistic evaluation, no rigid cutoffs)")
+                                "3. Partition Agreement Matrix (Empirical vs. Bootstrap)")
     write_sheet_table("05_Bootstrap_Stability", boot.obj$nodal.ci, r_next,
                       "4. Nodal Triad 95% Bootstrap Confidence Intervals & Item Stability")
   }

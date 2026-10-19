@@ -211,7 +211,7 @@ utils::globalVariables(c(
       labels = function(v) paste0(round(v * 100), "%"),
       expand = c(0.01, 0.01)
     ) +
-    ggplot2::scale_fill_manual(values = .rEGA_triad_palette(palette)) +
+    ggplot2::scale_fill_manual(values = .rEGA_triad_palette(palette), guide = ggplot2::guide_legend(nrow = 2, byrow = TRUE)) +
     ggplot2::labs(
       title = "Nodal Variance Triad Decomposition",
       subtitle = sprintf("h2 + beta2 + psi2 = 100%% | Gamma_t = %.3f | Psi_G = %.3f",
@@ -322,7 +322,7 @@ utils::globalVariables(c(
 #' @param label.min.pct Numeric. Minimum percentage required to print the label inside a bar
 #'   segment so text never overflows narrow rectangles. Default is \code{10}.
 #' @param ... Additional arguments (unused).
-#' @importFrom ggplot2 ggplot aes geom_col geom_point geom_segment geom_text coord_flip coord_equal scale_fill_manual scale_color_manual scale_linewidth_continuous scale_alpha_continuous scale_linetype_manual scale_y_continuous labs theme_minimal theme element_text element_blank position_stack
+#' @importFrom ggplot2 guide_legend ggplot aes geom_col geom_point geom_segment geom_text coord_flip coord_equal scale_fill_manual scale_color_manual scale_linewidth_continuous scale_alpha_continuous scale_linetype_manual scale_y_continuous labs theme_minimal theme element_text element_blank position_stack
 #' @importFrom grid grid.newpage pushViewport viewport grid.layout
 #' @importFrom grDevices hcl.colors
 #' @export

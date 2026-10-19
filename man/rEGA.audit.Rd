@@ -2,26 +2,21 @@
 % Please edit documentation in R/power_and_audit.r
 \name{rEGA.audit}
 \alias{rEGA.audit}
-\title{Export Open Science Cryptographic Audit Workbook for rEGA}
+\title{Exportacion de Libro Excel de Auditoria Criptografica para rEGA}
 \usage{
 rEGA.audit(rEGA.obj, boot.obj = NULL, file = "rEGA_OpenScience_Audit.xlsx")
 }
 \arguments{
-\item{rEGA.obj}{An object of class \code{"rEGA"}.}
+\item{rEGA.obj}{Objeto de clase \code{"rEGA"}.}
 
-\item{boot.obj}{Optional object of class \code{"boot.rEGA"}.}
+\item{boot.obj}{Objeto opcional de clase \code{"boot.rEGA"}.}
 
-\item{file}{Character. Output file path for the Excel workbook.
-Default is \code{"rEGA_OpenScience_Audit.xlsx"}.}
+\item{file}{Ruta del archivo Excel de salida. Por defecto \code{"rEGA_OpenScience_Audit.xlsx"}.}
 }
 \value{
-Invisibly returns the normalized path to the generated Excel file.
+Devuelve de forma invisible la ruta normalizada del archivo Excel.
 }
 \description{
-Generates a multi-sheet Excel audit workbook (\code{.xlsx}) containing the Open Science
-computational manifest (R version, package versions, SHA-256 cryptographic data hash),
-stage-by-stage matrices (\code{R.obs}, \code{K.refit}, \code{network.refit},
-\code{resolvent}, \code{adjacency.rEGA}), the Nodal Variance Conservation Triad,
-Network Loadings, Structural Reliability (\code{Gamma_c}, \code{SEM_c}), and
-bootstrap inference tables if provided.
+Genera un archivo Excel (\code{.xlsx}) de 5 hojas con el manifiesto de reproducibilidad,
+hash SHA-256, matrices por etapa, triada nodal, fiabilidad estructural e intervalos bootstrap.
 }

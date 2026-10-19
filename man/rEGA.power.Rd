@@ -2,7 +2,7 @@
 % Please edit documentation in R/power_and_audit.r
 \name{rEGA.power}
 \alias{rEGA.power}
-\title{Attenuation-Aware Power and Sample Size Planning for rEGA}
+\title{Planificacion de Potencia y Tamano Muestral con Atenuacion para rEGA}
 \usage{
 rEGA.power(
   rEGA.obj = NULL,
@@ -16,45 +16,27 @@ rEGA.power(
 )
 }
 \arguments{
-\item{rEGA.obj}{Optional object of class \code{"rEGA"} to automatically extract
-baseline reliability \code{Gamma.t} and item count \code{p}.}
+\item{rEGA.obj}{Objeto opcional de clase \code{"rEGA"}.}
 
-\item{gamma.baseline}{Numeric. Baseline network reliability if \code{rEGA.obj = NULL}.
-Default is \code{0.80}.}
+\item{gamma.baseline}{Numerico. Fiabilidad base si \code{rEGA.obj = NULL}. Por defecto \code{0.80}.}
 
-\item{p.baseline}{Integer. Baseline number of items if \code{rEGA.obj = NULL}.
-Default is \code{7L}.}
+\item{p.baseline}{Entero. Numero de items base. Por defecto \code{7L}.}
 
-\item{p.target}{Integer vector. Candidate target item counts to evaluate.
-Default is \code{c(5L, 7L, 10L, 15L)}.}
+\item{p.target}{Vector entero de cantidades de items a evaluar. Por defecto \code{c(5L, 7L, 10L, 15L)}.}
 
-\item{r.true}{Numeric. Expected true (unattenuated) effect size correlation
-with an external criterion. Default is \code{0.30}.}
+\item{r.true}{Numerico. Correlacion verdadera esperada. Por defecto \code{0.30}.}
 
-\item{gamma.criterion}{Numeric. Reliability of the external criterion measure.
-Default is \code{0.85}.}
+\item{gamma.criterion}{Numerico. Fiabilidad del criterio externo. Por defecto \code{0.85}.}
 
-\item{power}{Numeric. Target statistical power. Default is \code{0.80}.}
+\item{power}{Numerico. Potencia estadistica deseada. Por defecto \code{0.80}.}
 
-\item{alpha}{Numeric. Type I error rate. Default is \code{0.05}.}
+\item{alpha}{Numerico. Nivel de significancia. Por defecto \code{0.05}.}
 }
 \value{
-A \code{data.frame} containing projected reliability,
-attenuated observable correlations, required sample sizes \code{N}, and sample
-size inflation due to measurement error.
+Un \code{data.frame} con la fiabilidad proyectada, correlacion observable atenuada y \code{N} requerido.
 }
 \description{
-Implements the 3-step psychometric power and sample size workflow of Henry (2026)
-adapted to \code{rEGA} network reliability (\code{Gamma_c} or \code{Gamma_t}):
-\enumerate{
-\item Projects expected Network Reliability (\code{Gamma_p}) when modifying
-the number of items from baseline \code{p.baseline} to \code{p.target}.
-\item Computes the attenuated observable correlation
-(\code{r_obs = r_true * sqrt(Gamma_x * Gamma_y)}) and required sample
-size \code{N} for target statistical power (\code{1 - beta}).
-}
-}
-\examples{
-power_plan <- rEGA.power(gamma.baseline = 0.85, p.baseline = 7, r.true = 0.30)
-print(power_plan)
+Calcula la fiabilidad proyectada de red (\code{Gamma_p}) segun la formula de
+Spearman-Brown y estima el tamano muestral requerido (\code{N}) considerando
+la atenuacion por error de medicion (Henry, 2026).
 }
