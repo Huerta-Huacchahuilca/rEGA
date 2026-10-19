@@ -211,7 +211,7 @@ utils::globalVariables(c(
       labels = function(v) paste0(round(v * 100), "%"),
       expand = c(0.01, 0.01)
     ) +
-    ggplot2::scale_fill_manual(values = .rEGA_triad_palette(palette), guide = ggplot2::guide_legend(nrow = 2, byrow = TRUE)) +
+    ggplot2::scale_fill_manual(values = .rEGA_triad_palette(palette), guide = ggplot2::guide_legend(nrow = 1, reverse = TRUE)) +
     ggplot2::labs(
       title = "Nodal Variance Triad Decomposition",
       subtitle = sprintf("h2 + beta2 + psi2 = 100%% | Gamma_t = %.3f | Psi_G = %.3f",
@@ -223,6 +223,10 @@ utils::globalVariables(c(
     ggplot2::theme_minimal(base_size = 11) +
     ggplot2::theme(
       legend.position = "bottom",
+      legend.direction = "horizontal",
+      legend.title = ggplot2::element_text(face = "bold", size = 8.8),
+      legend.text = ggplot2::element_text(size = 8.4),
+      legend.key.size = grid::unit(0.36, "cm"),
       plot.title = ggplot2::element_text(face = "bold", hjust = 0.5),
       plot.subtitle = ggplot2::element_text(hjust = 0.5, color = "grey30"),
       axis.text.y = ggplot2::element_text(face = "bold", size = 10)
@@ -323,7 +327,7 @@ utils::globalVariables(c(
 #'   segment so text never overflows narrow rectangles. Default is \code{10}.
 #' @param ... Additional arguments (unused).
 #' @importFrom ggplot2 guide_legend ggplot aes geom_col geom_point geom_segment geom_text coord_flip coord_equal scale_fill_manual scale_color_manual scale_linewidth_continuous scale_alpha_continuous scale_linetype_manual scale_y_continuous labs theme_minimal theme element_text element_blank position_stack
-#' @importFrom grid grid.newpage pushViewport viewport grid.layout
+#' @importFrom grid grid.newpage pushViewport viewport grid.layout unit
 #' @importFrom grDevices hcl.colors
 #' @export
 plot.rEGA <- function(x,
