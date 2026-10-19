@@ -4,22 +4,39 @@
 \alias{plot.rEGA}
 \title{Plot Method for rEGA Objects}
 \usage{
-\method{plot}{rEGA}(x, type = c("both", "variance", "network"), show.values = TRUE, ...)
+\method{plot}{rEGA}(
+  x,
+  type = c("both", "separate", "variance", "network"),
+  layout = c("fr", "circle"),
+  palette = c("polychrome", "colorblind"),
+  show.values = TRUE,
+  label.min.pct = 10,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class \code{"rEGA"}.}
 
-\item{type}{Character. Type of plot: \code{"both"} (default, side-by-side EGA network and
-Nodal Variance Triad), \code{"network"} (EGA-style network), or \code{"variance"}
-(Nodal Variance Triad bar chart).}
+\item{type}{Character. Display mode: \code{"both"} (default, combined side-by-side),
+\code{"separate"} (prints two separate figures sequentially), \code{"network"} (network only),
+or \code{"variance"} (Nodal Variance Triad only).}
 
-\item{show.values}{Logical. If \code{TRUE} (default), displays the exact standardized
-percentages for each of the 3 nodal variance components (\code{h2 pct + beta2 pct + psi2 pct = 100 percent})
-on every item.}
+\item{layout}{Character. Network layout algorithm: \code{"fr"} (default, Fruchterman-Reingold)
+or \code{"circle"} (circular layout).}
+
+\item{palette}{Character. Color palette matching EGAnet: \code{"polychrome"} (default) or
+\code{"colorblind"} (Okabe-Ito colorblind-safe palette).}
+
+\item{show.values}{Logical. If \code{TRUE} (default), displays standardized percentages inside
+each bar rectangle when the component is at least \code{label.min.pct}.}
+
+\item{label.min.pct}{Numeric. Minimum percentage required to print the label inside a bar
+segment so text never overflows narrow rectangles. Default is \code{10}.}
 
 \item{...}{Additional arguments (unused).}
 }
 \description{
-Visualizes the EGA-style Purity-Weighted Partial Correlation Network, the Nodal Variance
-Conservation Triad (with standardized item percentages summing to 100 percent), or both side-by-side.
+Visualizes the EGA-style Purity-Weighted Partial Correlation Network and the Nodal Variance
+Conservation Triad either combined side-by-side (\code{type = "both"}), as separate plots
+(\code{type = "separate"}), or individually (\code{"network"} or \code{"variance"}).
 }

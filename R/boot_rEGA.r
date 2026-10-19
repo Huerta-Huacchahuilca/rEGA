@@ -2,11 +2,10 @@
 #'
 #' @description
 #' Performs parametric or non-parametric bootstrap resampling for \code{rEGA} models
-#' with multi-core parallelization, real-time progress reporting, and L'Ecuyer-CMRG
-#' reproducible random number streams. Computes structural consistency, item replicability,
+#' with multi-core parallelization, real-time progress bar with Estimated Time of Arrival (ETA),
+#' and reproducible random number streams. Computes structural consistency, item replicability,
 #' 95 percent percentile confidence intervals for nodal variance components and Network Gamma
-#' (\code{Gamma_c}, \code{Gamma_t}), and diagnostic agreement matrices without imposing
-#' rigid cutoff thresholds.
+#' (\code{Gamma_c}, \code{Gamma_t}), and diagnostic agreement matrices.
 #'
 #' @param rEGA.obj An object of class \code{"rEGA"} fitted by \code{\link{rEGA}}.
 #' @param iter Integer. Number of bootstrap replications. Default is \code{500L}.
@@ -14,23 +13,24 @@
 #'   normal data from \code{R.obs}) or \code{"resampling"} (non-parametric case resampling with
 #'   replacement from \code{raw.data}).
 #' @param ncores Integer. Number of parallel CPU cores to use. Default is \code{1L}.
-#' @param seed Integer. Master random seed for L'Ecuyer-CMRG parallel streams. Default is \code{2026L}.
-#' @param progress Logical. Display progress bar and estimated time of arrival? Default is \code{TRUE}.
-#' @param plot.boot.rEGA Logical. Automatically display the combined \code{rEGA} network and
-#'   item stability figure upon completion? Default is \code{TRUE}.
+#' @param seed Integer. Master random seed for reproducible bootstrap streams. Default is \code{11L}.
+#' @param progress Logical. Display real-time progress bar and estimated remaining time (ETA)? Default is \code{TRUE}.
+#' @param plot.boot.rEGA Logical. Automatically display the \code{boot.rEGA} visualization upon completion?
+#'   Default is \code{TRUE}.
 #' @param ... Additional plotting arguments passed to \code{plot.boot.rEGA} (e.g.,
-#'   \code{plot.type = "both"} or \code{"all"}, \code{show.values = TRUE}).
+#'   \code{plot.type = "both"} or \code{"separate"}, \code{palette = "polychrome"} or \code{"colorblind"},
+#'   \code{layout = "fr"} or \code{"circle"}).
 #'
 #' @return An object of class \code{"boot.rEGA"} containing:
 #' \itemize{
 #'   \item \code{rEGA.obj}: The original fitted \code{"rEGA"} model object.
+#'   \item \code{seed}: The master random seed used for the bootstrap replications.
 #'   \item \code{dimension.frequency}: Frequency table of estimated dimensions across replications.
 #'   \item \code{structural.consistency}: Proportion of replications where each empirical community
 #'         is recovered intact.
 #'   \item \code{item.stability}: Data frame of item-level stability and replication proportions
 #'         across all communities.
-#'   \item \code{agreement.matrix}: Diagnostic dimension-by-dimension agreement matrix and
-#'         continuous off-diagonal dispersion metric (evaluated holistically without rigid cutoffs).
+#'   \item \code{agreement.matrix}: Diagnostic dimension-by-dimension partition agreement matrix.
 #'   \item \code{global.ci}: Summary table with 95 percent confidence intervals for
 #'         \code{Gamma_t}, \code{Psi_G}, and \code{SEM_std}.
 #'   \item \code{nodal.ci}: Item-level 95 percent confidence intervals for \code{h2},
@@ -44,7 +44,7 @@
 #' @export
 #'
 #' @examples
-#' set.seed(123)
+#' set.seed(11)
 #' Sigma <- matrix(0.25, 6, 6)
 #' Sigma[1:3, 1:3] <- 0.65
 #' Sigma[4:6, 4:6] <- 0.65
@@ -59,7 +59,7 @@ boot.rEGA <- function(rEGA.obj,
                       iter = 500L,
                       type = c("parametric", "resampling"),
                       ncores = 1L,
-                      seed = 2026L,
+                      seed = 11L,
                       progress = TRUE,
                       plot.boot.rEGA = TRUE,
                       ...) {
@@ -73,9 +73,16 @@ boot.rEGA <- function(rEGA.obj,
     type <- "parametric"
   }
 
+  seed <- if (is.null(seed)) 11L else as.integer(seed)
+  iter <- as.integer(iter)
+  ncores <- max(1L, as.integer(ncores))
+
   dots <- list(...)
   plot.type <- if (!is.null(dots$plot.type)) dots$plot.type else "both"
+  layout <- if (!is.null(dots$layout)) dots$layout else "fr"
+  palette <- if (!is.null(dots$palette)) dots$palette else "polychrome"
   show.values <- if (!is.null(dots$show.values)) dots$show.values else TRUE
+  label.min.pct <- if (!is.null(dots$label.min.pct)) dots$label.min.pct else 10.0
 
   t0 <- Sys.time()
   n <- rEGA.obj$audit.metadata$n
@@ -91,7 +98,7 @@ boot.rEGA <- function(rEGA.obj,
   old_plan <- future::plan()
   on.exit(future::plan(old_plan), add = TRUE)
   if (ncores > 1L) {
-    future::plan(future::multisession, workers = as.integer(ncores))
+    future::plan(future::multisession, workers = ncores)
   } else {
     future::plan(future::sequential)
   }
@@ -99,7 +106,7 @@ boot.rEGA <- function(rEGA.obj,
   set.seed(seed)
   rep_seeds <- sample.int(1e8, size = iter, replace = FALSE)
 
-  run_one_rep <- function(b, p_bar = NULL) {
+  run_one_rep <- function(b) {
     options(mc.cores = 1L)
     s_b <- rep_seeds[b]
     set.seed(s_b)
@@ -136,8 +143,6 @@ boot.rEGA <- function(rEGA.obj,
       )
     }
 
-    if (!is.null(p_bar)) p_bar()
-
     if (is.null(fit_b)) {
       return(list(converged = FALSE, seed = s_b))
     }
@@ -158,19 +163,50 @@ boot.rEGA <- function(rEGA.obj,
     )
   }
 
+  # Real-time progress bar with Elapsed Time and Estimated Time Remaining (ETA)
   if (isTRUE(progress)) {
-    progressr::with_progress({
-      p_bar <- progressr::progressor(steps = iter)
-      boot_list <- future.apply::future_lapply(
-        seq_len(iter),
-        function(b) run_one_rep(b, p_bar = p_bar),
-        future.seed = TRUE
+    cat(sprintf(
+      "\nRunning boot.rEGA (%d replications | type = '%s' | cores = %d | seed = %d)...\n",
+      iter, type, ncores, seed
+    ))
+    boot_list <- vector("list", iter)
+    n_batches <- if (ncores == 1L) iter else min(iter, max(10L, ceiling(iter / ncores)))
+    batch_indices <- split(seq_len(iter), cut(seq_len(iter), breaks = n_batches, labels = FALSE))
+    done_count <- 0L
+
+    for (b_idx in seq_along(batch_indices)) {
+      ids <- batch_indices[[b_idx]]
+      if (ncores > 1L) {
+        res_batch <- future.apply::future_lapply(ids, run_one_rep, future.seed = TRUE)
+      } else {
+        res_batch <- lapply(ids, run_one_rep)
+      }
+      boot_list[ids] <- res_batch
+      done_count <- done_count + length(ids)
+
+      elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+      rate <- elapsed / max(1L, done_count)
+      eta <- max(0.0, rate * (iter - done_count))
+      pct_done <- round((done_count / iter) * 100)
+      bar_width <- 30L
+      filled <- round((done_count / iter) * bar_width)
+      bar_str <- paste0(
+        "[",
+        paste(rep("=", filled), collapse = ""),
+        paste(rep(" ", bar_width - filled), collapse = ""),
+        "]"
       )
-    })
+      cat(sprintf(
+        "\r  %s %3d%% (%d/%d) | Elapsed: %5.1fs | ETA: %5.1fs   ",
+        bar_str, pct_done, done_count, iter, elapsed, eta
+      ))
+      utils::flush.console()
+    }
+    cat("\n")
   } else {
     boot_list <- future.apply::future_lapply(
       seq_len(iter),
-      function(b) run_one_rep(b, p_bar = NULL),
+      run_one_rep,
       future.seed = TRUE
     )
   }
@@ -239,7 +275,6 @@ boot.rEGA <- function(rEGA.obj,
     stringsAsFactors = FALSE
   )
 
-  # Diagnostic Agreement Matrix (Continuous evaluation without rigid cutoffs)
   agree_mat <- matrix(0.0, nrow = length(emp_comms), ncol = length(all_comms))
   rownames(agree_mat) <- paste0("Empirical_Dim_", emp_comms)
   colnames(agree_mat) <- paste0("Boot_Dim_", all_comms)
@@ -319,6 +354,8 @@ boot.rEGA <- function(rEGA.obj,
     iter = iter,
     converged.iter = B_valid,
     type = type,
+    ncores = ncores,
+    seed = seed,
     dimension.frequency = dim_freq,
     structural.consistency = struct_cons_df,
     item.stability = item_stability_df,
@@ -331,7 +368,14 @@ boot.rEGA <- function(rEGA.obj,
   class(out) <- "boot.rEGA"
 
   if (isTRUE(plot.boot.rEGA)) {
-    p_boot <- plot(out, type = plot.type, show.values = show.values)
+    p_boot <- plot(
+      out,
+      type = plot.type,
+      layout = layout,
+      palette = palette,
+      show.values = show.values,
+      label.min.pct = label.min.pct
+    )
     if (inherits(p_boot, "ggplot")) print(p_boot)
   }
 

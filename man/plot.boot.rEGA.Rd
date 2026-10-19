@@ -6,25 +6,37 @@
 \usage{
 \method{plot}{boot.rEGA}(
   x,
-  type = c("both", "stability", "network", "variance", "all"),
+  type = c("both", "separate", "stability", "network", "variance", "all"),
+  layout = c("fr", "circle"),
+  palette = c("polychrome", "colorblind"),
   show.values = TRUE,
+  label.min.pct = 10,
   ...
 )
 }
 \arguments{
 \item{x}{An object of class \code{"boot.rEGA"}.}
 
-\item{type}{Character. Visualization layout: \code{"both"} (default, side-by-side
-\code{rEGA} Network + Item Stability), \code{"all"} (3-panel: Network + Nodal Triad +
-Item Stability), \code{"stability"} (Item Stability only), \code{"network"} (Network only),
-or \code{"variance"} (Nodal Variance Triad only).}
+\item{type}{Character. Display mode: \code{"both"} (default, combined side-by-side Network +
+Item Stability), \code{"separate"} (prints Network and Stability as separate figures),
+\code{"stability"} (Item Stability only), \code{"network"} (Network only),
+\code{"variance"} (Nodal Variance Triad only), or \code{"all"} (3-panel figure).}
 
-\item{show.values}{Logical. Display exact percentages on items? Default is \code{TRUE}.}
+\item{layout}{Character. Network layout algorithm: \code{"fr"} (default, Fruchterman-Reingold)
+or \code{"circle"} (circular layout).}
+
+\item{palette}{Character. Color palette matching EGAnet: \code{"polychrome"} (default) or
+\code{"colorblind"} (Okabe-Ito colorblind-safe palette).}
+
+\item{show.values}{Logical. Display percentages on items? Default is \code{TRUE}.}
+
+\item{label.min.pct}{Numeric. Minimum percentage required to print labels inside Nodal Triad bars.
+Default is \code{10}.}
 
 \item{...}{Additional arguments (unused).}
 }
 \description{
-Generates a unified side-by-side figure combining the empirical \code{rEGA} network
-(EGA-style) and the bootstrap item stability plot (similar to \code{bootEGA}), or
-individual diagnostic panels, without rigid cutoff lines.
+Visualizes the empirical \code{rEGA} network and the bootstrap item stability plot either
+combined side-by-side (\code{type = "both"}), as separate figures (\code{type = "separate"}),
+or individually (\code{"stability"}, \code{"network"}, \code{"variance"}, or \code{"all"}).
 }

@@ -21,12 +21,13 @@
 #'   \code{"cor_auto"} (default), \code{"polychoric"}, \code{"pearson"}, or \code{"spearman"}.
 #' @param algorithm Character. Community detection algorithm applied to the purity-weighted
 #'   adjacency matrix: \code{"walktrap"} (default), \code{"leiden"}, or \code{"louvain"}.
-#' @param plot.rEGA Logical. Should the diagnostic \code{rEGA} visualization (EGA-style network
-#'   and Nodal Variance Triad in percentages) be displayed upon estimation? Default is \code{TRUE}.
+#' @param plot.rEGA Logical. Should the \code{rEGA} visualization be displayed
+#'   upon estimation? Default is \code{TRUE}.
 #' @param seed Integer. Master random seed for reproducibility in unidimensionality checks,
-#'   network layout, and community partitioning. Default is \code{2026L}.
-#' @param ... Additional arguments for plot customization (\code{plot.type = "both"},
-#'   \code{show.values = TRUE}) or advanced algorithmic control (see section below).
+#'   network layout, and community partitioning. Default is \code{11L}.
+#' @param ... Additional arguments for plot customization (\code{plot.type = "both"} or \code{"separate"},
+#'   \code{layout = "fr"} or \code{"circle"}, \code{palette = "polychrome"} or \code{"colorblind"},
+#'   \code{show.values = TRUE}, \code{label.min.pct = 10}) or advanced algorithmic control.
 #'
 #' @section Advanced Control Arguments:
 #' Advanced algorithmic hyperparameters (\code{gamma}, \code{uni.method}, \code{lambda.min.ratio},
@@ -35,27 +36,6 @@
 #' These parameters control the core Neumann-Markov resolving algorithms and EBICglasso
 #' penalization. Modifying them deviates from the optimal standardized architecture and
 #' should be theoretically justified in the manuscript to prevent methodological flexibility.
-#'
-#' @section Holistic Interpretation (No Rigid Cutoffs):
-#' \code{rEGA} intentionally avoids rigid or arbitrary cutoff thresholds. Because the Nodal
-#' Variance Triad forms an exact compositional conservation system (\code{h2 + beta2 + psi2 = 1},
-#' or 100 percent of item variance), parameters must be interpreted holistically in conjunction with
-#' structural reliability (\code{Gamma_c}, \code{Gamma_t}), Global Graph Noise (\code{Psi_G}),
-#' and bootstrap structural stability in \code{\link{boot.rEGA}}:
-#' \itemize{
-#'   \item \strong{Essential Unidimensionality vs. Lexical Doublets}: When partitioning splits a scale
-#'         into minor clusters where items display bridging variance exceeding within-community signal
-#'         (\code{beta2 > h2}) alongside high total reliability (\code{Gamma_t}) and lower sub-dimension
-#'         reliability (\code{Gamma_c}), the split reflects local semantic redundancy rather than substantive
-#'         multidimensionality.
-#'   \item \strong{Transdiagnostic Bridging Nodes}: In multidimensional instruments, an item with prominent
-#'         bridging variance (\code{beta2}) and moderate within-community signal (\code{h2}) but controlled
-#'         Markov uniqueness (\code{psi2}) operates as a substantive bridge connecting communities.
-#'   \item \strong{Noisy or Defective Items}: An item is psychometrically problematic when convergent
-#'         evidence shows dominant Markov uniqueness (\code{psi2} exceeding total network signal
-#'         \code{h2 + beta2}), elevated Global Graph Noise (\code{Psi_G}), and unstable dimension
-#'         replication in \code{\link{boot.rEGA}}.
-#' }
 #'
 #' @return An object of class \code{"rEGA"} containing:
 #' \itemize{
@@ -72,25 +52,24 @@
 #'         \code{psi2}, percentages \code{h2_pct}, \code{beta2_pct}, \code{psi2_pct},
 #'         \code{h2_G}, \code{K_ii}, and \code{Conservation_Sum}).
 #'   \item \code{net.loadings}: Matrix of standardized network loadings across communities.
-#'   \item \code{reliability}: List containing dimension-level summary table (\code{$dimensions}:
-#'         \code{Gamma_c}, \code{SEM_std}, \code{SEM_raw}) and global metrics
-#'         (\code{$Gamma.t}, \code{$Psi.G}, \code{$SEM.total.std}, \code{$SEM.total.raw}).
+#'   \item \code{reliability}: List containing dimension-level summary table (\code{$dimensions})
+#'         and global metrics (\code{$Gamma.t}, \code{$Psi.G}, \code{$SEM.total.std}, \code{$SEM.total.raw}).
 #'   \item \code{audit.metadata}: List of algebraic verification checks, active edge counts,
-#'         \code{gamma.used}, and SHA-256 cryptographic data hash.
+#'         \code{gamma.used}, \code{seed}, and SHA-256 cryptographic data hash.
 #' }
 #'
 #' @importFrom stats cor cov2cor sd median quantile rnorm complete.cases setNames
-#' @importFrom utils globalVariables packageVersion sessionInfo
+#' @importFrom utils globalVariables packageVersion sessionInfo txtProgressBar setTxtProgressBar
 #' @importFrom Matrix nearPD
 #' @importFrom MASS mvrnorm
 #' @importFrom glasso glasso
 #' @importFrom qgraph EBICglasso cor_auto
-#' @importFrom igraph graph_from_adjacency_matrix cluster_walktrap cluster_leiden cluster_louvain membership E layout_with_fr
+#' @importFrom igraph graph_from_adjacency_matrix cluster_walktrap cluster_leiden cluster_louvain membership E layout_with_fr layout_in_circle
 #' @importFrom psych polychoric cor.smooth
 #' @export
 #'
 #' @examples
-#' set.seed(2026)
+#' set.seed(11)
 #' Sigma <- matrix(0.25, 6, 6)
 #' Sigma[1:3, 1:3] <- 0.65
 #' Sigma[4:6, 4:6] <- 0.65
@@ -106,12 +85,13 @@ rEGA <- function(
   cor.method = c("cor_auto", "polychoric", "pearson", "spearman"),
   algorithm = c("walktrap", "leiden", "louvain"),
   plot.rEGA = TRUE,
-  seed = 2026L,
-  ... # <-- Elipsis para parametros avanzados ocultos
+  seed = 11L,
+  ... # <-- Elipsis para parametros avanzados ocultos y opciones de grafico
 ) {
 
   cor.method <- match.arg(cor.method)
   algorithm <- match.arg(algorithm)
+  seed <- if (is.null(seed)) 11L else as.integer(seed)
 
   # ---------------------------------------------------------------------------
   # EXTRACCION DE ARGUMENTOS AVANZADOS (Control Estricto / Anti p-hacking)
@@ -129,7 +109,10 @@ rEGA <- function(
   refit.tol <- if (!is.null(args$refit.tol)) args$refit.tol else 1e-6
 
   plot.type <- if (!is.null(args$plot.type)) args$plot.type else "both"
+  layout <- if (!is.null(args$layout)) args$layout else "fr"
+  palette <- if (!is.null(args$palette)) args$palette else "polychrome"
   show.values <- if (!is.null(args$show.values)) args$show.values else TRUE
+  label.min.pct <- if (!is.null(args$label.min.pct)) args$label.min.pct else 10.0
 
   t0 <- Sys.time()
   raw_data <- NULL
@@ -285,7 +268,6 @@ rEGA <- function(
   }
 
   triad_sum <- h2_i + beta2_i + psi2_i
-  # Standardized percentages summing exactly to 100.0% per item
   h2_pct <- round((h2_i / triad_sum) * 100, 1)
   beta2_pct <- round((beta2_i / triad_sum) * 100, 1)
   psi2_pct <- round(100.0 - h2_pct - beta2_pct, 1)
@@ -369,10 +351,10 @@ rEGA <- function(
     }
     SEM_c_raw <- sd_raw_c * sqrt(1.0 - Gamma_c)
     data.frame(
-      Dimension = c_id, n_Items = p_c, Gamma_c = round(Gamma_c, 6),
-      Mean_h2 = round(mean(h2_i[idx_c]), 6), Mean_beta2 = round(mean(beta2_i[idx_c]), 6),
-      Mean_psi2 = round(mean(psi2_i[idx_c]), 6), SEM_std = round(SEM_c_std, 6),
-      SD_Raw = round(sd_raw_c, 6), SEM_raw = round(SEM_c_raw, 6), stringsAsFactors = FALSE
+      Dimension = c_id, n_Items = p_c, Gamma_c = round(Gamma_c, 4),
+      Mean_h2 = round(mean(h2_i[idx_c]), 4), Mean_beta2 = round(mean(beta2_i[idx_c]), 4),
+      Mean_psi2 = round(mean(psi2_i[idx_c]), 4), SEM_std = round(SEM_c_std, 4),
+      SD_Raw = round(sd_raw_c, 4), SEM_raw = round(SEM_c_raw, 4), stringsAsFactors = FALSE
     )
   })
   dim_reliability_df <- do.call(rbind, dim_rows)
@@ -409,7 +391,14 @@ rEGA <- function(
   )
   class(out) <- "rEGA"
   if (isTRUE(plot.rEGA)) {
-    p_res <- plot(out, type = plot.type, show.values = show.values)
+    p_res <- plot(
+      out,
+      type = plot.type,
+      layout = layout,
+      palette = palette,
+      show.values = show.values,
+      label.min.pct = label.min.pct
+    )
     if (inherits(p_res, "ggplot")) print(p_res)
   }
   return(out)
@@ -514,7 +503,7 @@ rEGA <- function(
 }
 
 .detect_communities_rEGA <- function(A_mat, algorithm = "walktrap", walktrap.steps = 4L,
-                                     leiden.objective = "modularity", resolution.parameter = 1.0, seed = 2026L) {
+                                     leiden.objective = "modularity", resolution.parameter = 1.0, seed = 11L) {
   p <- ncol(A_mat)
   if (sum(A_mat) <= 1e-8) return(seq_len(p))
   g <- igraph::graph_from_adjacency_matrix(A_mat, mode = "max", weighted = TRUE, diag = FALSE)

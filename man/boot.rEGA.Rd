@@ -9,7 +9,7 @@ boot.rEGA(
   iter = 500L,
   type = c("parametric", "resampling"),
   ncores = 1L,
-  seed = 2026L,
+  seed = 11L,
   progress = TRUE,
   plot.boot.rEGA = TRUE,
   ...
@@ -26,27 +26,28 @@ replacement from \code{raw.data}).}
 
 \item{ncores}{Integer. Number of parallel CPU cores to use. Default is \code{1L}.}
 
-\item{seed}{Integer. Master random seed for L'Ecuyer-CMRG parallel streams. Default is \code{2026L}.}
+\item{seed}{Integer. Master random seed for reproducible bootstrap streams. Default is \code{11L}.}
 
-\item{progress}{Logical. Display progress bar and estimated time of arrival? Default is \code{TRUE}.}
+\item{progress}{Logical. Display real-time progress bar and estimated remaining time (ETA)? Default is \code{TRUE}.}
 
-\item{plot.boot.rEGA}{Logical. Automatically display the combined \code{rEGA} network and
-item stability figure upon completion? Default is \code{TRUE}.}
+\item{plot.boot.rEGA}{Logical. Automatically display the \code{boot.rEGA} visualization upon completion?
+Default is \code{TRUE}.}
 
 \item{...}{Additional plotting arguments passed to \code{plot.boot.rEGA} (e.g.,
-\code{plot.type = "both"} or \code{"all"}, \code{show.values = TRUE}).}
+\code{plot.type = "both"} or \code{"separate"}, \code{palette = "polychrome"} or \code{"colorblind"},
+\code{layout = "fr"} or \code{"circle"}).}
 }
 \value{
 An object of class \code{"boot.rEGA"} containing:
 \itemize{
 \item \code{rEGA.obj}: The original fitted \code{"rEGA"} model object.
+\item \code{seed}: The master random seed used for the bootstrap replications.
 \item \code{dimension.frequency}: Frequency table of estimated dimensions across replications.
 \item \code{structural.consistency}: Proportion of replications where each empirical community
 is recovered intact.
 \item \code{item.stability}: Data frame of item-level stability and replication proportions
 across all communities.
-\item \code{agreement.matrix}: Diagnostic dimension-by-dimension agreement matrix and
-continuous off-diagonal dispersion metric (evaluated holistically without rigid cutoffs).
+\item \code{agreement.matrix}: Diagnostic dimension-by-dimension partition agreement matrix.
 \item \code{global.ci}: Summary table with 95 percent confidence intervals for
 \code{Gamma_t}, \code{Psi_G}, and \code{SEM_std}.
 \item \code{nodal.ci}: Item-level 95 percent confidence intervals for \code{h2},
@@ -56,14 +57,13 @@ continuous off-diagonal dispersion metric (evaluated holistically without rigid 
 }
 \description{
 Performs parametric or non-parametric bootstrap resampling for \code{rEGA} models
-with multi-core parallelization, real-time progress reporting, and L'Ecuyer-CMRG
-reproducible random number streams. Computes structural consistency, item replicability,
+with multi-core parallelization, real-time progress bar with Estimated Time of Arrival (ETA),
+and reproducible random number streams. Computes structural consistency, item replicability,
 95 percent percentile confidence intervals for nodal variance components and Network Gamma
-(\code{Gamma_c}, \code{Gamma_t}), and diagnostic agreement matrices without imposing
-rigid cutoff thresholds.
+(\code{Gamma_c}, \code{Gamma_t}), and diagnostic agreement matrices.
 }
 \examples{
-set.seed(123)
+set.seed(11)
 Sigma <- matrix(0.25, 6, 6)
 Sigma[1:3, 1:3] <- 0.65
 Sigma[4:6, 4:6] <- 0.65

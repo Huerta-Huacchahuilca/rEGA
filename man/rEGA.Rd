@@ -11,7 +11,7 @@ rEGA(
   cor.method = c("cor_auto", "polychoric", "pearson", "spearman"),
   algorithm = c("walktrap", "leiden", "louvain"),
   plot.rEGA = TRUE,
-  seed = 2026L,
+  seed = 11L,
   ...
 )
 }
@@ -31,14 +31,15 @@ Automatically detected when \code{data} contains raw item responses. Default is 
 \item{algorithm}{Character. Community detection algorithm applied to the purity-weighted
 adjacency matrix: \code{"walktrap"} (default), \code{"leiden"}, or \code{"louvain"}.}
 
-\item{plot.rEGA}{Logical. Should the diagnostic \code{rEGA} visualization (EGA-style network
-and Nodal Variance Triad in percentages) be displayed upon estimation? Default is \code{TRUE}.}
+\item{plot.rEGA}{Logical. Should the \code{rEGA} visualization be displayed
+upon estimation? Default is \code{TRUE}.}
 
 \item{seed}{Integer. Master random seed for reproducibility in unidimensionality checks,
-network layout, and community partitioning. Default is \code{2026L}.}
+network layout, and community partitioning. Default is \code{11L}.}
 
-\item{...}{Additional arguments for plot customization (\code{plot.type = "both"},
-\code{show.values = TRUE}) or advanced algorithmic control (see section below).}
+\item{...}{Additional arguments for plot customization (\code{plot.type = "both"} or \code{"separate"},
+\code{layout = "fr"} or \code{"circle"}, \code{palette = "polychrome"} or \code{"colorblind"},
+\code{show.values = TRUE}, \code{label.min.pct = 10}) or advanced algorithmic control.}
 }
 \value{
 An object of class \code{"rEGA"} containing:
@@ -56,11 +57,10 @@ An object of class \code{"rEGA"} containing:
 \code{psi2}, percentages \code{h2_pct}, \code{beta2_pct}, \code{psi2_pct},
 \code{h2_G}, \code{K_ii}, and \code{Conservation_Sum}).
 \item \code{net.loadings}: Matrix of standardized network loadings across communities.
-\item \code{reliability}: List containing dimension-level summary table (\code{$dimensions}:
-\code{Gamma_c}, \code{SEM_std}, \code{SEM_raw}) and global metrics
-(\code{$Gamma.t}, \code{$Psi.G}, \code{$SEM.total.std}, \code{$SEM.total.raw}).
+\item \code{reliability}: List containing dimension-level summary table (\code{$dimensions})
+and global metrics (\code{$Gamma.t}, \code{$Psi.G}, \code{$SEM.total.std}, \code{$SEM.total.raw}).
 \item \code{audit.metadata}: List of algebraic verification checks, active edge counts,
-\code{gamma.used}, and SHA-256 cryptographic data hash.
+\code{gamma.used}, \code{seed}, and SHA-256 cryptographic data hash.
 }
 }
 \description{
@@ -84,31 +84,8 @@ penalization. Modifying them deviates from the optimal standardized architecture
 should be theoretically justified in the manuscript to prevent methodological flexibility.
 }
 
-\section{Holistic Interpretation (No Rigid Cutoffs)}{
-
-\code{rEGA} intentionally avoids rigid or arbitrary cutoff thresholds. Because the Nodal
-Variance Triad forms an exact compositional conservation system (\code{h2 + beta2 + psi2 = 1},
-or 100 percent of item variance), parameters must be interpreted holistically in conjunction with
-structural reliability (\code{Gamma_c}, \code{Gamma_t}), Global Graph Noise (\code{Psi_G}),
-and bootstrap structural stability in \code{\link{boot.rEGA}}:
-\itemize{
-\item \strong{Essential Unidimensionality vs. Lexical Doublets}: When partitioning splits a scale
-into minor clusters where items display bridging variance exceeding within-community signal
-(\code{beta2 > h2}) alongside high total reliability (\code{Gamma_t}) and lower sub-dimension
-reliability (\code{Gamma_c}), the split reflects local semantic redundancy rather than substantive
-multidimensionality.
-\item \strong{Transdiagnostic Bridging Nodes}: In multidimensional instruments, an item with prominent
-bridging variance (\code{beta2}) and moderate within-community signal (\code{h2}) but controlled
-Markov uniqueness (\code{psi2}) operates as a substantive bridge connecting communities.
-\item \strong{Noisy or Defective Items}: An item is psychometrically problematic when convergent
-evidence shows dominant Markov uniqueness (\code{psi2} exceeding total network signal
-\code{h2 + beta2}), elevated Global Graph Noise (\code{Psi_G}), and unstable dimension
-replication in \code{\link{boot.rEGA}}.
-}
-}
-
 \examples{
-set.seed(2026)
+set.seed(11)
 Sigma <- matrix(0.25, 6, 6)
 Sigma[1:3, 1:3] <- 0.65
 Sigma[4:6, 4:6] <- 0.65

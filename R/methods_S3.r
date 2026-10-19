@@ -1,37 +1,68 @@
 # Declare NSE variables used in ggplot2::aes() to satisfy R CMD check
 utils::globalVariables(c(
   "Item", "Proportion", "Component", "Item_Stability", "Dim_Label",
-  "Pct_Label", "Triad_Summary", "x", "y", "xend", "yend", "Weight",
+  "Pct_Label", "x", "y", "xend", "yend", "Weight",
   "Sign", "Node", "Stability_Label"
 ))
 
-.rEGA_palette <- function(n_comms) {
-  base_cols <- c(
-    "#0072B2", "#E69F00", "#009E73", "#CC79A7",
-    "#56B4E9", "#D55E00", "#F0E442", "#332288"
-  )
-  if (n_comms <= length(base_cols)) {
-    return(base_cols[seq_len(n_comms)])
+# Palettes matching EGAnet: "polychrome" (default EGA) and "colorblind" (Okabe-Ito)
+.rEGA_community_palette <- function(n_comms, palette = c("polychrome", "colorblind")) {
+  palette <- match.arg(palette)
+  if (palette == "colorblind") {
+    cols <- c(
+      "#0072B2", "#E69F00", "#009E73", "#CC79A7",
+      "#56B4E9", "#D55E00", "#F0E442", "#999999"
+    )
+  } else {
+    # Classic EGAnet / ggplot2 polychrome palette
+    cols <- c(
+      "#F8766D", "#00BA38", "#619CFF", "#F564E3",
+      "#B79F00", "#00BFC4", "#00B0F6", "#E76BF3"
+    )
+  }
+  if (n_comms <= length(cols)) {
+    return(cols[seq_len(n_comms)])
   }
   grDevices::hcl.colors(n_comms, palette = "Dynamic")
 }
 
-.build_network_ggplot <- function(rEGA.obj) {
+.rEGA_triad_palette <- function(palette = c("polychrome", "colorblind")) {
+  palette <- match.arg(palette)
+  if (palette == "colorblind") {
+    c(
+      "Within-Community Signal (h2)" = "#0072B2",
+      "Bridging Variance (beta2)" = "#E69F00",
+      "Markov Uniqueness (psi2)" = "#D55E00"
+    )
+  } else {
+    c(
+      "Within-Community Signal (h2)" = "#2B5C8F",
+      "Bridging Variance (beta2)" = "#E68A00",
+      "Markov Uniqueness (psi2)" = "#C0392B"
+    )
+  }
+}
+
+.build_network_ggplot <- function(rEGA.obj,
+                                  layout = c("fr", "circle"),
+                                  palette = c("polychrome", "colorblind")) {
+  layout <- match.arg(layout)
+  palette <- match.arg(palette)
+
   Omega <- rEGA.obj$network.refit
   wc <- rEGA.obj$wc
   p <- ncol(Omega)
   item_names <- colnames(Omega)
-  seed_val <- if (!is.null(rEGA.obj$audit.metadata$seed)) rEGA.obj$audit.metadata$seed else 2026L
+  seed_val <- if (!is.null(rEGA.obj$audit.metadata$seed)) rEGA.obj$audit.metadata$seed else 11L
 
   A_abs <- abs(Omega)
   diag(A_abs) <- 0
   g <- igraph::graph_from_adjacency_matrix(A_abs, mode = "undirected", weighted = TRUE, diag = FALSE)
   set.seed(seed_val)
-  if (sum(A_abs) > 1e-6) {
-    coords <- igraph::layout_with_fr(g, weights = igraph::E(g)$weight)
+  if (layout == "circle" || sum(A_abs) <= 1e-6) {
+    coords <- igraph::layout_in_circle(g)
   } else {
-    angles <- seq(0, 2 * pi, length.out = p + 1)[seq_len(p)]
-    coords <- cbind(cos(angles), sin(angles))
+    coords <- igraph::layout_with_fr(g, weights = igraph::E(g)$weight)
   }
 
   for (col_i in 1:2) {
@@ -43,12 +74,13 @@ utils::globalVariables(c(
     }
   }
 
+  unique_dims <- sort(unique(wc))
   nodes_df <- data.frame(
     Node = item_names,
     x = coords[, 1],
     y = coords[, 2],
     Dim_Label = factor(paste0("Dimension ", wc),
-                       levels = paste0("Dimension ", sort(unique(wc)))),
+                       levels = paste0("Dimension ", unique_dims)),
     stringsAsFactors = FALSE
   )
 
@@ -70,8 +102,15 @@ utils::globalVariables(c(
     )
   }
 
-  n_comms <- length(unique(wc))
-  pal <- stats::setNames(.rEGA_palette(n_comms), paste0("Dimension ", sort(unique(wc))))
+  pal <- stats::setNames(
+    .rEGA_community_palette(length(unique_dims), palette = palette),
+    paste0("Dimension ", unique_dims)
+  )
+  edge_cols <- if (palette == "colorblind") {
+    c("Positive" = "#009E73", "Negative" = "#D55E00")
+  } else {
+    c("Positive" = "#1B7837", "Negative" = "#C51B7D")
+  }
 
   p_net <- ggplot2::ggplot()
   if (nrow(edges_df) > 0) {
@@ -83,8 +122,8 @@ utils::globalVariables(c(
         show.legend = FALSE
       ) +
       ggplot2::scale_linewidth_continuous(range = c(0.4, 3.2)) +
-      ggplot2::scale_alpha_continuous(range = c(0.25, 0.85)) +
-      ggplot2::scale_color_manual(values = c("Positive" = "#1B5E20", "Negative" = "#B71C1C")) +
+      ggplot2::scale_alpha_continuous(range = c(0.30, 0.88)) +
+      ggplot2::scale_color_manual(values = edge_cols) +
       ggplot2::scale_linetype_manual(values = c("Positive" = "solid", "Negative" = "dashed"))
   }
 
@@ -92,19 +131,19 @@ utils::globalVariables(c(
     ggplot2::geom_point(
       data = nodes_df,
       ggplot2::aes(x = x, y = y, fill = Dim_Label),
-      shape = 21, size = 11.5, color = "grey15", stroke = 0.9
+      shape = 21, size = 11.5, color = "grey15", stroke = 0.85
     ) +
     ggplot2::geom_text(
       data = nodes_df,
       ggplot2::aes(x = x, y = y, label = Node),
-      color = "white", fontface = "bold", size = 3.3
+      color = "grey10", fontface = "bold", size = 3.3
     ) +
-    ggplot2::scale_fill_manual(values = pal, name = "Community") +
+    ggplot2::scale_fill_manual(values = pal, name = "Dimension") +
     ggplot2::coord_equal(xlim = c(-1.25, 1.25), ylim = c(-1.25, 1.25)) +
     ggplot2::labs(
       title = sprintf("rEGA Network (%d %s)", rEGA.obj$n.dim,
                       ifelse(rEGA.obj$n.dim == 1, "Dimension", "Dimensions")),
-      subtitle = sprintf("Support-Refitted GGM | Gamma_t = %.3f | Psi_G = %.3f",
+      subtitle = sprintf("Gamma_t = %.3f | Psi_G = %.3f",
                          rEGA.obj$reliability$Gamma.t, rEGA.obj$reliability$Psi.G),
       x = NULL, y = NULL
     ) +
@@ -121,11 +160,13 @@ utils::globalVariables(c(
   return(p_net)
 }
 
-.build_variance_ggplot <- function(rEGA.obj, show.values = TRUE) {
+.build_variance_ggplot <- function(rEGA.obj,
+                                   palette = c("polychrome", "colorblind"),
+                                   show.values = TRUE,
+                                   label.min.pct = 10.0) {
+  palette <- match.arg(palette)
   triad <- rEGA.obj$nodal.triad
-  p <- nrow(triad)
 
-  # Ensure exact 100.0% conservation per item for percentage labels
   tot_i <- triad$h2 + triad$beta2 + triad$psi2
   pct_h2 <- round((triad$h2 / tot_i) * 100, 1)
   pct_b2 <- round((triad$beta2 / tot_i) * 100, 1)
@@ -136,40 +177,27 @@ utils::globalVariables(c(
       Item = triad$Item, Community = triad$Community,
       Component = "Within-Community Signal (h2)",
       Proportion = triad$h2 / tot_i,
-      Pct = pct_h2,
-      Pct_Label = ifelse(pct_h2 >= 5.5, sprintf("%.1f%%", pct_h2), ""),
+      Pct_Label = ifelse(pct_h2 >= label.min.pct, sprintf("%.1f%%", pct_h2), ""),
       stringsAsFactors = FALSE
     ),
     data.frame(
       Item = triad$Item, Community = triad$Community,
       Component = "Bridging Variance (beta2)",
       Proportion = triad$beta2 / tot_i,
-      Pct = pct_b2,
-      Pct_Label = ifelse(pct_b2 >= 5.5, sprintf("%.1f%%", pct_b2), ""),
+      Pct_Label = ifelse(pct_b2 >= label.min.pct, sprintf("%.1f%%", pct_b2), ""),
       stringsAsFactors = FALSE
     ),
     data.frame(
       Item = triad$Item, Community = triad$Community,
       Component = "Markov Uniqueness (psi2)",
       Proportion = triad$psi2 / tot_i,
-      Pct = pct_p2,
-      Pct_Label = ifelse(pct_p2 >= 5.5, sprintf("%.1f%%", pct_p2), ""),
+      Pct_Label = ifelse(pct_p2 >= label.min.pct, sprintf("%.1f%%", pct_p2), ""),
       stringsAsFactors = FALSE
     )
   )
 
-  # If show.values = TRUE, append exact 3-component percentage readout to item label
-  if (isTRUE(show.values)) {
-    item_labels <- sprintf(
-      "%s  [h2: %4.1f%% | b2: %4.1f%% | psi2: %4.1f%%]",
-      triad$Item, pct_h2, pct_b2, pct_p2
-    )
-    names(item_labels) <- triad$Item
-    df_long$Item <- factor(df_long$Item, levels = rev(triad$Item), labels = rev(item_labels))
-  } else {
-    df_long$Item <- factor(df_long$Item, levels = rev(triad$Item))
-  }
-
+  # Clean Y-axis showing only item names
+  df_long$Item <- factor(df_long$Item, levels = rev(triad$Item))
   df_long$Component <- factor(df_long$Component, levels = c(
     "Markov Uniqueness (psi2)",
     "Bridging Variance (beta2)",
@@ -177,30 +205,27 @@ utils::globalVariables(c(
   ))
 
   p_var <- ggplot2::ggplot(df_long, ggplot2::aes(x = Item, y = Proportion, fill = Component)) +
-    ggplot2::geom_col(width = 0.72, color = "white", linewidth = 0.25) +
+    ggplot2::geom_col(width = 0.70, color = "white", linewidth = 0.25) +
     ggplot2::coord_flip() +
     ggplot2::scale_y_continuous(
       labels = function(v) paste0(round(v * 100), "%"),
       expand = c(0.01, 0.01)
     ) +
-    ggplot2::scale_fill_manual(values = c(
-      "Within-Community Signal (h2)" = "#1B5E20",
-      "Bridging Variance (beta2)" = "#F57F17",
-      "Markov Uniqueness (psi2)" = "#B71C1C"
-    )) +
+    ggplot2::scale_fill_manual(values = .rEGA_triad_palette(palette)) +
     ggplot2::labs(
-      title = sprintf("Nodal Variance Triad (Gamma_t = %.3f, Psi_G = %.3f)",
-                      rEGA.obj$reliability$Gamma.t, rEGA.obj$reliability$Psi.G),
-      subtitle = "Exact Conservation per Item: h2% + beta2% + psi2% = 100.0% (No Rigid Cutoffs)",
-      x = "Item [Exact Triad Percentages: h2 | beta2 | psi2]",
-      y = "Percentage of Standardized Nodal Variance (100%)",
-      fill = "Variance Component"
+      title = "Nodal Variance Triad Decomposition",
+      subtitle = sprintf("h2 + beta2 + psi2 = 100%% | Gamma_t = %.3f | Psi_G = %.3f",
+                         rEGA.obj$reliability$Gamma.t, rEGA.obj$reliability$Psi.G),
+      x = "Item",
+      y = "Standardized Nodal Variance (%)",
+      fill = "Component"
     ) +
     ggplot2::theme_minimal(base_size = 11) +
     ggplot2::theme(
       legend.position = "bottom",
-      plot.title = ggplot2::element_text(face = "bold"),
-      axis.text.y = ggplot2::element_text(family = "mono", face = "bold", size = 9.5)
+      plot.title = ggplot2::element_text(face = "bold", hjust = 0.5),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, color = "grey30"),
+      axis.text.y = ggplot2::element_text(face = "bold", size = 10)
     )
 
   if (isTRUE(show.values)) {
@@ -208,14 +233,17 @@ utils::globalVariables(c(
       ggplot2::geom_text(
         ggplot2::aes(label = Pct_Label),
         position = ggplot2::position_stack(vjust = 0.5),
-        color = "white", fontface = "bold", size = 3.1
+        color = "white", fontface = "bold", size = 3.2
       )
   }
 
   return(p_var)
 }
 
-.build_stability_ggplot <- function(boot.obj, show.values = TRUE) {
+.build_stability_ggplot <- function(boot.obj,
+                                    palette = c("polychrome", "colorblind"),
+                                    show.values = TRUE) {
+  palette <- match.arg(palette)
   df <- boot.obj$item.stability
   df$Item <- factor(df$Item, levels = rev(df$Item))
   unique_dims <- sort(unique(df$Empirical_Dim))
@@ -223,8 +251,10 @@ utils::globalVariables(c(
                          levels = paste0("Dimension ", unique_dims))
   df$Stability_Label <- sprintf("%.1f%%", df$Item_Stability * 100)
 
-  pal <- stats::setNames(.rEGA_palette(length(unique_dims)),
-                         paste0("Dimension ", unique_dims))
+  pal <- stats::setNames(
+    .rEGA_community_palette(length(unique_dims), palette = palette),
+    paste0("Dimension ", unique_dims)
+  )
 
   p_stab <- ggplot2::ggplot(df, ggplot2::aes(x = Item, y = Item_Stability, color = Dim_Label)) +
     ggplot2::geom_segment(
@@ -238,17 +268,19 @@ utils::globalVariables(c(
       breaks = seq(0, 1.0, by = 0.20),
       labels = function(v) paste0(round(v * 100), "%")
     ) +
-    ggplot2::scale_color_manual(values = pal, name = "Empirical Community") +
+    ggplot2::scale_color_manual(values = pal, name = "Dimension") +
     ggplot2::labs(
-      title = sprintf("Item Replicability (%d Bootstrap Replications)", boot.obj$converged.iter),
-      subtitle = "Replication proportion in assigned community (Holistic evaluation, no rigid cutoffs)",
-      x = "Psychometric Node (Item)",
-      y = "Bootstrap Replication Stability (%)"
+      title = "Bootstrap Item Stability",
+      subtitle = sprintf("Replication Proportion (%d Bootstrap Replications)", boot.obj$converged.iter),
+      x = "Item",
+      y = "Replication Proportion (%)"
     ) +
     ggplot2::theme_minimal(base_size = 11) +
     ggplot2::theme(
       legend.position = "bottom",
-      plot.title = ggplot2::element_text(face = "bold")
+      plot.title = ggplot2::element_text(face = "bold", hjust = 0.5),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, color = "grey30"),
+      axis.text.y = ggplot2::element_text(face = "bold", size = 10)
     )
 
   if (isTRUE(show.values)) {
@@ -274,70 +306,111 @@ utils::globalVariables(c(
 
 #' @title Plot Method for rEGA Objects
 #' @description
-#' Visualizes the EGA-style Purity-Weighted Partial Correlation Network, the Nodal Variance
-#' Conservation Triad (with standardized item percentages summing to 100 percent), or both side-by-side.
+#' Visualizes the EGA-style Purity-Weighted Partial Correlation Network and the Nodal Variance
+#' Conservation Triad either combined side-by-side (\code{type = "both"}), as separate plots
+#' (\code{type = "separate"}), or individually (\code{"network"} or \code{"variance"}).
 #' @param x An object of class \code{"rEGA"}.
-#' @param type Character. Type of plot: \code{"both"} (default, side-by-side EGA network and
-#'   Nodal Variance Triad), \code{"network"} (EGA-style network), or \code{"variance"}
-#'   (Nodal Variance Triad bar chart).
-#' @param show.values Logical. If \code{TRUE} (default), displays the exact standardized
-#'   percentages for each of the 3 nodal variance components (\code{h2 pct + beta2 pct + psi2 pct = 100 percent})
-#'   on every item.
+#' @param type Character. Display mode: \code{"both"} (default, combined side-by-side),
+#'   \code{"separate"} (prints two separate figures sequentially), \code{"network"} (network only),
+#'   or \code{"variance"} (Nodal Variance Triad only).
+#' @param layout Character. Network layout algorithm: \code{"fr"} (default, Fruchterman-Reingold)
+#'   or \code{"circle"} (circular layout).
+#' @param palette Character. Color palette matching EGAnet: \code{"polychrome"} (default) or
+#'   \code{"colorblind"} (Okabe-Ito colorblind-safe palette).
+#' @param show.values Logical. If \code{TRUE} (default), displays standardized percentages inside
+#'   each bar rectangle when the component is at least \code{label.min.pct}.
+#' @param label.min.pct Numeric. Minimum percentage required to print the label inside a bar
+#'   segment so text never overflows narrow rectangles. Default is \code{10}.
 #' @param ... Additional arguments (unused).
 #' @importFrom ggplot2 ggplot aes geom_col geom_point geom_segment geom_text coord_flip coord_equal scale_fill_manual scale_color_manual scale_linewidth_continuous scale_alpha_continuous scale_linetype_manual scale_y_continuous labs theme_minimal theme element_text element_blank position_stack
 #' @importFrom grid grid.newpage pushViewport viewport grid.layout
 #' @importFrom grDevices hcl.colors
 #' @export
-plot.rEGA <- function(x, type = c("both", "variance", "network"), show.values = TRUE, ...) {
+plot.rEGA <- function(x,
+                      type = c("both", "separate", "variance", "network"),
+                      layout = c("fr", "circle"),
+                      palette = c("polychrome", "colorblind"),
+                      show.values = TRUE,
+                      label.min.pct = 10.0,
+                      ...) {
   type <- match.arg(type)
+  layout <- match.arg(layout)
+  palette <- match.arg(palette)
 
   if (type == "network") {
-    return(.build_network_ggplot(x))
+    return(.build_network_ggplot(x, layout = layout, palette = palette))
   }
   if (type == "variance") {
-    return(.build_variance_ggplot(x, show.values = show.values))
+    return(.build_variance_ggplot(x, palette = palette, show.values = show.values, label.min.pct = label.min.pct))
   }
 
-  p_net <- .build_network_ggplot(x)
-  p_var <- .build_variance_ggplot(x, show.values = show.values)
+  p_net <- .build_network_ggplot(x, layout = layout, palette = palette)
+  p_var <- .build_variance_ggplot(x, palette = palette, show.values = show.values, label.min.pct = label.min.pct)
+
+  if (type == "separate") {
+    print(p_net)
+    print(p_var)
+    return(invisible(list(Network = p_net, Variance_Triad = p_var)))
+  }
+
   return(.draw_side_by_side(list(Network = p_net, Variance_Triad = p_var)))
 }
 
 #' @title Plot Method for boot.rEGA Objects
 #' @description
-#' Generates a unified side-by-side figure combining the empirical \code{rEGA} network
-#' (EGA-style) and the bootstrap item stability plot (similar to \code{bootEGA}), or
-#' individual diagnostic panels, without rigid cutoff lines.
+#' Visualizes the empirical \code{rEGA} network and the bootstrap item stability plot either
+#' combined side-by-side (\code{type = "both"}), as separate figures (\code{type = "separate"}),
+#' or individually (\code{"stability"}, \code{"network"}, \code{"variance"}, or \code{"all"}).
 #' @param x An object of class \code{"boot.rEGA"}.
-#' @param type Character. Visualization layout: \code{"both"} (default, side-by-side
-#'   \code{rEGA} Network + Item Stability), \code{"all"} (3-panel: Network + Nodal Triad +
-#'   Item Stability), \code{"stability"} (Item Stability only), \code{"network"} (Network only),
-#'   or \code{"variance"} (Nodal Variance Triad only).
-#' @param show.values Logical. Display exact percentages on items? Default is \code{TRUE}.
+#' @param type Character. Display mode: \code{"both"} (default, combined side-by-side Network +
+#'   Item Stability), \code{"separate"} (prints Network and Stability as separate figures),
+#'   \code{"stability"} (Item Stability only), \code{"network"} (Network only),
+#'   \code{"variance"} (Nodal Variance Triad only), or \code{"all"} (3-panel figure).
+#' @param layout Character. Network layout algorithm: \code{"fr"} (default, Fruchterman-Reingold)
+#'   or \code{"circle"} (circular layout).
+#' @param palette Character. Color palette matching EGAnet: \code{"polychrome"} (default) or
+#'   \code{"colorblind"} (Okabe-Ito colorblind-safe palette).
+#' @param show.values Logical. Display percentages on items? Default is \code{TRUE}.
+#' @param label.min.pct Numeric. Minimum percentage required to print labels inside Nodal Triad bars.
+#'   Default is \code{10}.
 #' @param ... Additional arguments (unused).
 #' @export
-plot.boot.rEGA <- function(x, type = c("both", "stability", "network", "variance", "all"),
-                           show.values = TRUE, ...) {
+plot.boot.rEGA <- function(x,
+                           type = c("both", "separate", "stability", "network", "variance", "all"),
+                           layout = c("fr", "circle"),
+                           palette = c("polychrome", "colorblind"),
+                           show.values = TRUE,
+                           label.min.pct = 10.0,
+                           ...) {
   type <- match.arg(type)
-  p_stab <- .build_stability_ggplot(x, show.values = show.values)
+  layout <- match.arg(layout)
+  palette <- match.arg(palette)
+
+  p_stab <- .build_stability_ggplot(x, palette = palette, show.values = show.values)
 
   if (type == "stability" || is.null(x$rEGA.obj)) {
     return(p_stab)
   }
   if (type == "network") {
-    return(.build_network_ggplot(x$rEGA.obj))
+    return(.build_network_ggplot(x$rEGA.obj, layout = layout, palette = palette))
   }
   if (type == "variance") {
-    return(.build_variance_ggplot(x$rEGA.obj, show.values = show.values))
+    return(.build_variance_ggplot(x$rEGA.obj, palette = palette, show.values = show.values, label.min.pct = label.min.pct))
   }
+
+  p_net <- .build_network_ggplot(x$rEGA.obj, layout = layout, palette = palette)
+
+  if (type == "separate") {
+    print(p_net)
+    print(p_stab)
+    return(invisible(list(Network = p_net, Stability = p_stab)))
+  }
+
   if (type == "all") {
-    p_net <- .build_network_ggplot(x$rEGA.obj)
-    p_var <- .build_variance_ggplot(x$rEGA.obj, show.values = show.values)
+    p_var <- .build_variance_ggplot(x$rEGA.obj, palette = palette, show.values = show.values, label.min.pct = label.min.pct)
     return(.draw_side_by_side(list(Network = p_net, Variance_Triad = p_var, Stability = p_stab)))
   }
 
-  # Default "both": Unified rEGA Network + Item Stability (bootEGA style)
-  p_net <- .build_network_ggplot(x$rEGA.obj)
   return(.draw_side_by_side(list(Network = p_net, Stability = p_stab)))
 }
 
@@ -346,26 +419,53 @@ plot.boot.rEGA <- function(x, type = c("both", "stability", "network", "variance
 #' @param ... Additional arguments (unused).
 #' @export
 print.rEGA <- function(x, ...) {
-  cat("======================================================================\n")
-  cat(" Reliability Exploratory Graph Analysis (rEGA)\n")
-  cat("======================================================================\n")
-  cat(sprintf(" Pathway: %s | Sample Size (n): %d | Items (p): %d\n",
-              x$audit.metadata$pathway, x$audit.metadata$n, x$audit.metadata$p))
-  cat(sprintf(" Correlation: %s | Community Algorithm: %s | Active Edges: %d\n",
-              x$audit.metadata$cor.method, x$audit.metadata$algorithm,
-              x$audit.metadata$active.edges))
-  cat(sprintf(" Estimated Dimensions: %d | Total Gamma_t: %.4f | Global Noise Psi_G: %.4f\n",
-              x$n.dim, x$reliability$Gamma.t, x$reliability$Psi.G))
-  cat(sprintf(" Standardized SEM: %.4f | Raw-Score SEM: %.4f\n",
-              x$reliability$SEM.total.std, x$reliability$SEM.total.raw))
-  cat("----------------------------------------------------------------------\n")
-  cat("1. Dimensional Structural Reliability (Coefficient Gamma_c & Graph SEM):\n")
-  print(x$reliability$dimensions, row.names = FALSE)
-  cat("----------------------------------------------------------------------\n")
-  cat("2. Nodal Variance Conservation Triad (h2 + beta2 + psi2 = 1 | 100%):\n")
-  print(x$nodal.triad[, c("Item", "Community", "h2", "beta2", "psi2",
-                          "h2_pct", "beta2_pct", "psi2_pct")], row.names = FALSE)
-  cat("======================================================================\n")
+  cat("\n====================================================================\n")
+  cat("  Reliability Exploratory Graph Analysis (rEGA)\n")
+  cat("====================================================================\n")
+  cat(sprintf("  Data Pathway                : %s\n", x$audit.metadata$pathway))
+  cat(sprintf("  Sample Size (n)             : %d\n", x$audit.metadata$n))
+  cat(sprintf("  Number of Items (p)         : %d\n", x$audit.metadata$p))
+  cat(sprintf("  Correlation Method          : %s\n", x$audit.metadata$cor.method))
+  cat(sprintf("  Community Algorithm         : %s\n", x$audit.metadata$algorithm))
+  cat(sprintf("  EBIC Tuning Gamma           : %.2f\n", x$audit.metadata$gamma.used))
+  cat(sprintf("  Active Network Edges        : %d\n", x$audit.metadata$active.edges))
+  cat(sprintf("  Random Seed Used            : %d\n", x$audit.metadata$seed))
+  cat(sprintf("  Estimated Dimensions        : %d\n", x$n.dim))
+  cat("--------------------------------------------------------------------\n")
+  cat("  Global Network Reliability & Measurement Error:\n")
+  cat(sprintf("  * Total Network Gamma (Gamma_t) : %.4f\n", x$reliability$Gamma.t))
+  cat(sprintf("  * Global Graph Noise (Psi_G)    : %.4f\n", x$reliability$Psi.G))
+  cat(sprintf("  * Standardized Graph SEM        : %.4f\n", x$reliability$SEM.total.std))
+  cat(sprintf("  * Raw-Score Graph SEM           : %.4f\n", x$reliability$SEM.total.raw))
+  cat("--------------------------------------------------------------------\n")
+  cat("  1. Dimensional Structural Reliability & Mean Nodal Triad:\n\n")
+  dim_tab <- data.frame(
+    Dim = x$reliability$dimensions$Dimension,
+    Items = x$reliability$dimensions$n_Items,
+    Gamma_c = sprintf("%.4f", x$reliability$dimensions$Gamma_c),
+    Mean_h2 = sprintf("%.4f", x$reliability$dimensions$Mean_h2),
+    Mean_beta2 = sprintf("%.4f", x$reliability$dimensions$Mean_beta2),
+    Mean_psi2 = sprintf("%.4f", x$reliability$dimensions$Mean_psi2),
+    SEM_std = sprintf("%.4f", x$reliability$dimensions$SEM_std),
+    SEM_raw = sprintf("%.4f", x$reliability$dimensions$SEM_raw),
+    stringsAsFactors = FALSE
+  )
+  print(dim_tab, row.names = FALSE)
+  cat("--------------------------------------------------------------------\n")
+  cat("  2. Item-Level Nodal Variance Conservation Triad (Proportions & %):\n\n")
+  triad_tab <- data.frame(
+    Item = x$nodal.triad$Item,
+    Dim = x$nodal.triad$Community,
+    h2 = sprintf("%.4f", x$nodal.triad$h2),
+    beta2 = sprintf("%.4f", x$nodal.triad$beta2),
+    psi2 = sprintf("%.4f", x$nodal.triad$psi2),
+    h2_Pct = sprintf("%5.1f%%", x$nodal.triad$h2_pct),
+    beta2_Pct = sprintf("%5.1f%%", x$nodal.triad$beta2_pct),
+    psi2_Pct = sprintf("%5.1f%%", x$nodal.triad$psi2_pct),
+    stringsAsFactors = FALSE
+  )
+  print(triad_tab, row.names = FALSE)
+  cat("====================================================================\n")
   invisible(x)
 }
 
@@ -375,9 +475,13 @@ print.rEGA <- function(x, ...) {
 #' @export
 summary.rEGA <- function(object, ...) {
   print.rEGA(object, ...)
-  cat("3. Standardized Network Loadings:\n")
+  cat("  3. Standardized Network Loadings:\n\n")
   print(object$net.loadings)
-  cat("======================================================================\n")
+  cat("--------------------------------------------------------------------\n")
+  cat(sprintf("  Max Resolvent Algebraic Error : %.2e\n", object$audit.metadata$max.algebraic.error))
+  cat(sprintf("  Max Triad Conservation Error  : %.2e\n", object$audit.metadata$max.conservation.error))
+  cat(sprintf("  Data SHA-256 Hash (first 16)  : %s\n", substr(object$audit.metadata$data.sha256, 1, 16)))
+  cat("====================================================================\n")
   invisible(object)
 }
 
@@ -386,24 +490,27 @@ summary.rEGA <- function(object, ...) {
 #' @param ... Additional arguments (unused).
 #' @export
 print.boot.rEGA <- function(x, ...) {
-  cat("======================================================================\n")
-  cat(" Parallel Bootstrap Stability & Inference for rEGA (boot.rEGA)\n")
-  cat("======================================================================\n")
-  cat(sprintf(" Resampling Type: %s | Converged Replications: %d / %d (%.2f sec)\n",
-              x$type, x$converged.iter, x$iter, x$runtime.sec))
-  cat("----------------------------------------------------------------------\n")
-  cat("1. Dimension Frequency Distribution:\n")
+  cat("\n====================================================================\n")
+  cat("  Bootstrap Inference & Stability Analysis for rEGA (boot.rEGA)\n")
+  cat("====================================================================\n")
+  cat(sprintf("  Resampling Scheme           : %s\n", x$type))
+  cat(sprintf("  Converged Replications      : %d / %d\n", x$converged.iter, x$iter))
+  cat(sprintf("  Parallel CPU Cores          : %d\n", x$ncores))
+  cat(sprintf("  Random Seed Used            : %d\n", x$seed))
+  cat(sprintf("  Computation Time            : %.2f sec\n", x$runtime.sec))
+  cat("--------------------------------------------------------------------\n")
+  cat("  1. Frequency of Estimated Dimensions:\n\n")
   print(x$dimension.frequency, row.names = FALSE)
-  cat("----------------------------------------------------------------------\n")
-  cat("2. Structural Consistency & Mean Item Stability per Dimension:\n")
+  cat("--------------------------------------------------------------------\n")
+  cat("  2. Structural Consistency & Mean Item Stability by Dimension:\n\n")
   print(x$structural.consistency, row.names = FALSE)
-  cat("----------------------------------------------------------------------\n")
-  cat("3. Global Reliability & Graph SEM 95% Bootstrap Confidence Intervals:\n")
+  cat("--------------------------------------------------------------------\n")
+  cat("  3. Global Network Parameters (95% Bootstrap Confidence Intervals):\n\n")
   print(x$global.ci, row.names = FALSE)
-  cat("----------------------------------------------------------------------\n")
-  cat("4. Diagnostic Agreement Matrix (Holistic evaluation, no rigid cutoffs):\n")
+  cat("--------------------------------------------------------------------\n")
+  cat("  4. Partition Agreement Matrix (Empirical vs. Bootstrap):\n\n")
   print(x$agreement.matrix, row.names = FALSE)
-  cat("======================================================================\n")
+  cat("====================================================================\n")
   invisible(x)
 }
 
@@ -413,8 +520,11 @@ print.boot.rEGA <- function(x, ...) {
 #' @export
 summary.boot.rEGA <- function(object, ...) {
   print.boot.rEGA(object, ...)
-  cat("5. Nodal Variance Triad 95% Bootstrap CIs & Item Stability:\n")
+  cat("  5. Item Replication Stability Across Dimensions:\n\n")
+  print(object$item.stability, row.names = FALSE)
+  cat("--------------------------------------------------------------------\n")
+  cat("  6. Nodal Variance Triad 95% Bootstrap Confidence Intervals:\n\n")
   print(object$nodal.ci, row.names = FALSE)
-  cat("======================================================================\n")
+  cat("====================================================================\n")
   invisible(object)
 }
