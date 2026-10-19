@@ -17,7 +17,7 @@ Standard EGA pipelines estimate precision matrices $\mathbf{K} = \mathbf{\Sigma}
 3. **Nodal Variance Conservation Law**: Decomposes each item's standardized unit variance into three interpretable parameters summing to 100% of item variance:
    $$h_i^2 \text{ (Within-Community Signal)} + \beta_i^2 \text{ (Bridging Variance)} + \psi_i^2 \text{ (Markov Uniqueness)} \equiv 1 \text{ (100\%)}$$
 4. **Purity-Weighted Community Detection ($A_{ij}^{\text{rEGA}}$)**: Weights active edges by topological purity ($h_{\mathcal{G},i}^2 = 1 - \psi_i^2$) prior to Walktrap, Leiden, or Louvain partitioning.
-5. **Network Reliability Coefficient $\Gamma$ ($\Gamma\sb{c}$, $\Gamma\sb{t}$) & Graph $\mathrm{SEM}\sb{c}$**: Provides closed-form dimensional and total reliability coefficients alongside standardized and raw-score Standard Errors of Measurement ($\mathrm{SEM}\sb{c}^{\mathrm{std}}$, $\mathrm{SEM}\sb{c}^{\mathrm{raw}}$) and Global Graph Noise ($\Psi\sb{\mathcal{G}}$).
+5. **Network Reliability Coefficient $\Gamma$ ($\Gamma_c, \Gamma_t$) & Graph $SEM_c$**: Provides closed-form dimensional and total reliability coefficients alongside standardized and raw-score Standard Errors of Measurement ($SEM_c^{std}, SEM_c^{raw}$) and Global Graph Noise ($\Psi_{\mathcal{G}}$).
 6. **Compositional Evaluation Without Rigid Cutoffs**: Because $h_i^2 + \beta_i^2 + \psi_i^2 = 1$ forms an exact conservation system, `rEGA` and `boot.rEGA` evaluate nodal variance components, structural reliability, and item replicability jointly without imposing arbitrary fixed thresholds.
 
 ---
