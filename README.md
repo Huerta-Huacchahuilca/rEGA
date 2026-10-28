@@ -147,7 +147,7 @@ If you use **`rEGA`** in academic studies, thesis projects, or methodological re
 
 ### APA 7th Edition
 
-> Huerta-Huacchahuilca, C. (2026). *rEGA: Reliability Exploratory Graph Analysis* (R package version 0.1.0) [Computer software]. GitHub. https://github.com/Huerta-Huacchahuilca/rEGA
+> Huerta-Huacchahuilca, C. (2026). *rEGA: Reliability Exploratory Graph Analysis* (R package version 1.0.0) [Computer software]. GitHub. https://github.com/Huerta-Huacchahuilca/rEGA
 
 ### BibTeX Entry
 
@@ -156,7 +156,7 @@ If you use **`rEGA`** in academic studies, thesis projects, or methodological re
   title  = {rEGA: Reliability Exploratory Graph Analysis},
   author = {Huerta-Huacchahuilca, C{\'e}sar},
   year   = {2026},
-  note   = {R package version 0.1.0},
+  note   = {R package version 1.0.0},
   url    = {https://github.com/Huerta-Huacchahuilca/rEGA}
 }
 ```
