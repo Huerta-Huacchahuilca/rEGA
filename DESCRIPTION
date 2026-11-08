@@ -3,7 +3,7 @@ Type: Package
 Title: Reliability Exploratory Graph Analysis (rEGA) and Nodal Variance Decomposition
 Version: 0.1.0
 Authors@R: c(
-    person("C\u00e9sar", "Huerta-Huacchahuilca",
+    person("C\u00e9sar", "Huerta-Huacchahuilca, César",
            email = "andrehuerta1411@gmail.com",
            role = c("aut", "cre"),
            comment = c(ORCID = "0009-0000-8906-2678"))
