@@ -132,7 +132,7 @@ rEGA.audit(rEGA.obj = fit, boot.obj = boot_fit, file = "rEGA_Audit_Report.xlsx")
 
 ## Author & Maintainer
 
-* **César Huerta-Huacchahuilca**  
+- **César Huerta-Huacchahuilca**  
   *Creator, Lead Developer & Maintainer*  
   *Email:* [andrehuerta1411@gmail.com](mailto:andrehuerta1411@gmail.com)  
   *GitHub Profile:* [@Huerta-Huacchahuilca](https://github.com/Huerta-Huacchahuilca)  
@@ -143,11 +143,11 @@ rEGA.audit(rEGA.obj = fit, boot.obj = boot_fit, file = "rEGA_Audit_Report.xlsx")
 
 ## Citation & Academic Attribution
 
-If you use **`rEGA`** in academic studies, thesis projects, or methodological research, please cite the package as:
+If you use **`rEGA`** in academic studies, thesis projects, or methodological research, please cite the software package (solely developed by C. Huerta-Huacchahuilca) as:
 
 ### APA 7th Edition
 
-> Huerta-Huacchahuilca, C. (2026). *rEGA: Reliability Exploratory Graph Analysis* (R package version 1.0.0) [Computer software]. GitHub. https://github.com/Huerta-Huacchahuilca/rEGA
+> Huerta-Huacchahuilca, C. (2026). *rEGA: Reliability Exploratory Graph Analysis* (R package version 1.0.0) [Computer software]. GitHub. [https://github.com/Huerta-Huacchahuilca/rEGA](https://github.com/Huerta-Huacchahuilca/rEGA)
 
 ### BibTeX Entry
 
@@ -161,8 +161,8 @@ If you use **`rEGA`** in academic studies, thesis projects, or methodological re
 }
 ```
 
----
+### Accompanying Methodological Paper & OSF Repository
 
-## License
+To cite the theoretical framework, Monte Carlo simulation, and empirical validation studies:
 
-This package is free and open-source software licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+> Huerta-Huacchahuilca, C., & Ramos-Diaz, J. (2026). *Reliability Exploratory Graph Analysis (rEGA): Nodal Variance Decomposition and Coefficient Gamma for Psychometric Networks*. Open Science Framework (OSF). (https://doi.org/10.17605/OSF.IO/7QPRA)
